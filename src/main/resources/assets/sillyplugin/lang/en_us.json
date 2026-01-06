@@ -1,0 +1,18 @@
+{
+    "figura.docs.silly": "Spiritual successor to GoofyPlugin",
+    "figura.docs.globals.silly": "The instance of SillyAPI",
+    "figura.docs.silly.set_fly": "Allows overriding if you can fly or not.\nRequires cheats.",
+    "figura.docs.silly.set_pos": "Sets your player's position.\nRequires cheats.",
+    "figura.docs.silly.set_velocity": "Sets your player's velocity.\nRequires cheats.",
+    "figura.docs.silly.set_rot": "Sets your player's rotation.\nRequires cheats.",
+    "figura.docs.silly.cheats_enabled": "Returns if cheats are presently enabled.",
+    "figura.docs.silly.upload_avatar": "Uploads your current avatar to cloud.",
+    "figura.docs.silly.load_local_avatar": "Loads an avatar from your avatar folder.",
+    "figura.docs.silly.get_avatar_color": "avatar:getColor() except for other avatars.",
+    "figura.docs.silly.get_avatar_nameplate": "Returns the nameplates of another avatar.",
+    "figura.docs.silly.cat": "Sends meow in chat, because half of figura are cats in disguise.",
+    "figura.docs.silly.get_bumpscocity": "Gets the current bumpscocity.",
+    "figura.docs.silly.what_does_bumpscocity_do": "Tells you what bumpscocity does.",
+    "sillyplugin.permissions.value.bumpscocity": "Bumpscocity",
+    "sillyplugin.permissions.value.bumpscocity.tooltip": "silly:whatDoesBumpscocityDo()"
+}

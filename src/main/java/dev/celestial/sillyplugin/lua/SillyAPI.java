@@ -1,0 +1,273 @@
+package dev.celestial.sillyplugin.lua;
+
+import dev.celestial.sillyplugin.SillyPlugin;
+import dev.celestial.sillyplugin.SillyUtil;
+import dev.celestial.sillyplugin.client.SillyPluginClient;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientPacketListener;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.world.entity.player.Abilities;
+import org.apache.commons.lang3.ObjectUtils;
+import org.figuramc.figura.FiguraMod;
+import org.figuramc.figura.avatar.Avatar;
+import org.figuramc.figura.avatar.AvatarManager;
+import org.figuramc.figura.avatar.local.LocalAvatarFetcher;
+import org.figuramc.figura.avatar.local.LocalAvatarLoader;
+import org.figuramc.figura.backend2.NetworkStuff;
+import org.figuramc.figura.gui.widgets.lists.AvatarList;
+import org.figuramc.figura.lua.FiguraLuaRuntime;
+import org.figuramc.figura.lua.LuaNotNil;
+import org.figuramc.figura.lua.LuaWhitelist;
+import org.figuramc.figura.lua.docs.LuaMethodDoc;
+import org.figuramc.figura.lua.docs.LuaMethodOverload;
+import org.figuramc.figura.lua.docs.LuaTypeDoc;
+import org.figuramc.figura.math.vector.FiguraVec2;
+import org.figuramc.figura.math.vector.FiguraVec3;
+import org.figuramc.figura.permissions.PermissionManager;
+import org.figuramc.figura.utils.LuaUtils;
+import org.luaj.vm2.LuaError;
+import org.luaj.vm2.LuaTable;
+
+import java.nio.file.Path;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
+
+@LuaWhitelist
+@LuaTypeDoc(name = "SillyAPI", value = "silly")
+public class SillyAPI {
+    public final Avatar avatar;
+    public final FiguraLuaRuntime runtime;
+    public final Minecraft minecraft;
+    public boolean mayFlyOverride = false;
+    public boolean mayFly = false;
+    public boolean local = false;
+
+    public SillyAPI(Avatar avatar) {
+        this.avatar = avatar;
+        this.runtime = avatar.luaRuntime;
+        this.minecraft = Minecraft.getInstance();
+        local = avatar.isHost;
+        if (local) SillyPluginClient.hostInstance = this;
+    }
+
+    public void cleanup() {
+        if (!local) return;
+        if (minecraft.player != null) {
+            Abilities a = minecraft.player.getAbilities();
+            if (a.flying && !a.mayfly && this.mayFly && this.mayFlyOverride) {
+                a.flying = false;
+            }
+        }
+        SillyPluginClient.hostInstance = null;
+    }
+
+    public void cheatExecutor(Consumer<LocalPlayer> callback) {
+        if (!local) return;
+        if (!(minecraft.player instanceof LocalPlayer)) return;
+        if (minecraft.gameMode == null) return;
+        if (!(minecraft.player.hasPermissions(2) || minecraft.gameMode.getPlayerMode().isCreative() || minecraft.isSingleplayer() || minecraft.player.getTags().contains("silly_cheats_allowed"))) return;
+        callback.accept(minecraft.player);
+    }
+
+    @LuaWhitelist
+    @LuaMethodDoc("silly.cat")
+    public void cat() {
+        if (!local) return;
+        ClientPacketListener con = minecraft.getConnection();
+        if (con == null) return;
+        con.sendChat("meow");
+    }
+
+    @LuaWhitelist
+    @LuaMethodDoc("silly.what_does_bumpscocity_do")
+    public String whatDoesBumpscocityDo() {
+        throw new LuaError("");
+    }
+
+    @LuaWhitelist
+    @LuaMethodDoc("silly.get_bumpscocity")
+    public Integer getBumpscocity() {
+        int value = avatar.permissions.get(SillyPlugin.BUMPSCOCITY);
+        if (value > 1000) {
+            throw new LuaError("Dear god, this is way too much bumpscocity! (1000 max)");
+        }
+        return value;
+    }
+
+    @LuaWhitelist
+    @LuaMethodDoc(
+        value = "silly.set_fly",
+        overloads = {
+            @LuaMethodOverload(
+                    argumentTypes = { Boolean.class },
+                    argumentNames = {"mayFly"}
+            ),
+            @LuaMethodOverload(
+                    argumentNames = {},
+                    argumentTypes = {}
+            )
+        }
+    )
+    public void setFly(Boolean mayFly) {
+        cheatExecutor(plr -> {
+            if (mayFly == null) {
+                this.mayFlyOverride = false;
+            } else {
+                this.mayFlyOverride = true;
+                this.mayFly = mayFly;
+            }
+        });
+    }
+
+    // alias for backwards compat with goofy
+    @LuaWhitelist
+    public void setCanFly(Boolean canFly) {
+        setFly(canFly);
+    }
+
+    @LuaWhitelist
+    @LuaMethodDoc(
+            value = "silly.set_pos",
+            overloads = {
+                    @LuaMethodOverload(
+                            argumentTypes = {FiguraVec3.class},
+                            argumentNames = {"pos"}
+                    ),
+                    @LuaMethodOverload(
+                            argumentTypes = { Float.class, Float.class, Float.class },
+                            argumentNames = {"x","y","z"}
+                    )
+            }
+    )
+    public void setPos(@LuaNotNil Object x, Float y, Float z) {
+        FiguraVec3 pos = LuaUtils.parseVec3("setPos", x, y, z);
+        cheatExecutor(plr -> plr.setPos(pos.asVec3()));
+    }
+
+    @LuaWhitelist
+    @LuaMethodDoc(
+            value = "silly.set_velocity",
+            overloads = {
+                    @LuaMethodOverload(
+                            argumentTypes = {FiguraVec3.class},
+                            argumentNames = {"velocity"}
+                    ),
+                    @LuaMethodOverload(
+                            argumentTypes = { Float.class, Float.class, Float.class },
+                            argumentNames = {"x","y","z"}
+                    )
+            }
+    )
+    public void setVelocity(@LuaNotNil Object x, Float y, Float z) {
+        FiguraVec3 vel = LuaUtils.parseVec3("setVelocity", x, y, z);
+        cheatExecutor(plr -> plr.setDeltaMovement(vel.asVec3()));
+    }
+
+    @LuaWhitelist
+    @LuaMethodDoc(
+            value = "silly.set_rot",
+            overloads = {
+                    @LuaMethodOverload(
+                            argumentTypes = {FiguraVec2.class},
+                            argumentNames = {"rot"}
+                    ),
+                    @LuaMethodOverload(
+                            argumentTypes = { Float.class, Float.class },
+                            argumentNames = {"x","y"}
+                    )
+            }
+    )
+    public void setRot(@LuaNotNil Object x, Float y) {
+        FiguraVec2 rot = LuaUtils.parseVec2("setRot", x, y);
+        cheatExecutor(plr -> {
+            plr.setXRot((float)rot.x);
+            plr.setYRot((float)rot.y);
+        });
+    }
+
+    @LuaWhitelist
+    @LuaMethodDoc(value = "silly.cheats_enabled")
+    public boolean cheatsEnabled() {
+        AtomicBoolean enabled = new AtomicBoolean(false);
+        cheatExecutor(plr -> enabled.set(true));
+        return enabled.get();
+    }
+
+    @LuaWhitelist
+    @LuaMethodDoc(
+            overloads = {
+                    @LuaMethodOverload(
+                            argumentTypes = { String.class },
+                            argumentNames = { "username" },
+                            returnType = LuaTable.class
+                    )
+            },
+            value = "silly.get_avatar_nameplate"
+    )
+    public LuaTable getAvatarNameplate(String username) {
+        Avatar other = SillyUtil.getAvatar(username);
+        LuaTable table = new LuaTable();
+        if (other == null) return table;
+        String name = other.entityName;
+        if (name.isBlank()) name = other.name;
+        if (name.isBlank()) name = other.id;
+        table.set("CHAT", ObjectUtils.firstNonNull(avatar.luaRuntime.nameplate.CHAT.getText(), name));
+        table.set("ENTITY", ObjectUtils.firstNonNull(avatar.luaRuntime.nameplate.ENTITY.getText(), name));
+        table.set("LIST", ObjectUtils.firstNonNull(avatar.luaRuntime.nameplate.LIST.getText(), name));
+
+        return table;
+    }
+
+    @LuaWhitelist
+    @LuaMethodDoc(
+            overloads = {
+                    @LuaMethodOverload(
+                            argumentTypes = { String.class },
+                            argumentNames = { "username" },
+                            returnType = String.class
+                    )
+            },
+            value = "silly.get_avatar_color"
+    )
+    public String getAvatarColor(String username) {
+        Avatar other = SillyUtil.getAvatar(username);
+        return other != null ? other.color : null;
+    }
+
+    @LuaWhitelist
+    @LuaMethodDoc(
+            overloads = {
+                    @LuaMethodOverload(
+                            argumentTypes = {String.class},
+                            argumentNames = {"path"}
+                    )
+            },
+            value = "silly.load_local_avatar"
+    )
+    public void loadLocalAvatar(@LuaNotNil String path) {
+        if (!FiguraMod.isLocal(avatar.owner)) return;
+
+        if (path.isBlank()) throw new LuaError("Empty path detected!");
+
+        Path avatarPath = LocalAvatarFetcher.getLocalAvatarDirectory().resolve(path);
+        AvatarManager.loadLocalAvatar(avatarPath);
+        AvatarList.selectedEntry = avatarPath;
+    }
+
+    @LuaWhitelist
+    @LuaMethodDoc(value = "silly.upload_avatar")
+    public void uploadAvatar() {
+        if (!FiguraMod.isLocal(avatar.owner)) return;
+        try {
+            // figura i hate your code :skull:
+            LocalAvatarLoader.loadAvatar(null, null);
+        } catch (Exception ignored) {}
+        NetworkStuff.uploadAvatar(avatar);
+        AvatarList.selectedEntry = null;
+    }
+
+    @Override
+    public String toString() {
+        return "SillyAPI";
+    }
+}

@@ -4,8 +4,10 @@ import dev.celestial.sillyplugin.SillyPlugin;
 import dev.celestial.sillyplugin.SillyUtil;
 import dev.celestial.sillyplugin.client.SillyPluginClient;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.player.Abilities;
 import org.apache.commons.lang3.ObjectUtils;
 import org.figuramc.figura.FiguraMod;
@@ -18,6 +20,7 @@ import org.figuramc.figura.gui.widgets.lists.AvatarList;
 import org.figuramc.figura.lua.FiguraLuaRuntime;
 import org.figuramc.figura.lua.LuaNotNil;
 import org.figuramc.figura.lua.LuaWhitelist;
+import org.figuramc.figura.lua.api.world.BlockStateAPI;
 import org.figuramc.figura.lua.docs.LuaMethodDoc;
 import org.figuramc.figura.lua.docs.LuaMethodOverload;
 import org.figuramc.figura.lua.docs.LuaTypeDoc;
@@ -29,6 +32,7 @@ import org.luaj.vm2.LuaError;
 import org.luaj.vm2.LuaTable;
 
 import java.nio.file.Path;
+import java.util.Hashtable;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
@@ -40,9 +44,11 @@ public class SillyAPI {
     public final Minecraft minecraft;
     public boolean mayFlyOverride = false;
     public boolean mayFly = false;
-    public boolean local = false;
+    public boolean noclip = false;
+    public boolean local;
 
     public SillyAPI(Avatar avatar) {
+        SillyPluginClient.FakeBlocks.put(avatar.id, new Hashtable<>());
         this.avatar = avatar;
         this.runtime = avatar.luaRuntime;
         this.minecraft = Minecraft.getInstance();
@@ -50,8 +56,14 @@ public class SillyAPI {
         if (local) SillyPluginClient.hostInstance = this;
     }
 
+    public SillyAPI(FiguraLuaRuntime runtime) {
+        this(runtime.owner);
+    }
+
     public void cleanup() {
-        if (!local) return;
+        SillyPluginClient.FakeBlocks.remove(avatar.id);
+
+        if (!local) return; // START host cleanup
         if (minecraft.player != null) {
             Abilities a = minecraft.player.getAbilities();
             if (a.flying && !a.mayfly && this.mayFly && this.mayFlyOverride) {
@@ -65,7 +77,7 @@ public class SillyAPI {
         if (!local) return;
         if (!(minecraft.player instanceof LocalPlayer)) return;
         if (minecraft.gameMode == null) return;
-        if (!(minecraft.player.hasPermissions(2) || minecraft.gameMode.getPlayerMode().isCreative() || minecraft.isSingleplayer() || minecraft.player.getTags().contains("silly_cheats_allowed"))) return;
+//        if (!(minecraft.player.hasPermissions(2) || minecraft.gameMode.getPlayerMode().isCreative() || minecraft.isSingleplayer() || minecraft.player.getTags().contains("silly_cheats_allowed"))) return;
         callback.accept(minecraft.player);
     }
 
@@ -87,11 +99,44 @@ public class SillyAPI {
     @LuaWhitelist
     @LuaMethodDoc("silly.get_bumpscocity")
     public Integer getBumpscocity() {
-        int value = avatar.permissions.get(SillyPlugin.BUMPSCOCITY);
+        int value = avatar.permissions.get(SillyPluginClient.BUMPSCOCITY);
         if (value > 1000) {
             throw new LuaError("Dear god, this is way too much bumpscocity! (1000 max)");
         }
         return value;
+    }
+
+    @LuaWhitelist
+    @LuaMethodDoc(
+            value = "silly.set_noclip",
+            overloads = {
+                    @LuaMethodOverload(
+                            argumentTypes = { Boolean.class },
+                            argumentNames = { "state" }
+                    )
+            }
+    )
+    public void setNoclip(@LuaNotNil Boolean state) {
+        cheatExecutor(localPlayer -> {
+            noclip = state;
+        });
+    }
+
+    @LuaWhitelist
+    public void setBlock(BlockStateAPI state) {
+        if (avatar.permissions.get(SillyPluginClient.FAKE_BLOCKS) != 1) {
+            avatar.noPermissions.add(SillyPluginClient.FAKE_BLOCKS);
+            return;
+        } else {
+            avatar.noPermissions.remove(SillyPluginClient.FAKE_BLOCKS);
+        }
+        if (minecraft.level != null) {
+            ClientLevel lvl = minecraft.level;
+            FiguraVec3 posFV3 = state.getPos().floor();
+            BlockPos pos = new BlockPos((int)posFV3.x, (int)posFV3.y, (int)posFV3.z);
+            SillyPluginClient.FakeBlocks.get(avatar.id).put(pos, state.blockState);
+            lvl.setBlock(pos, state.blockState, 2);
+        }
     }
 
     @LuaWhitelist
@@ -141,7 +186,8 @@ public class SillyAPI {
     )
     public void setPos(@LuaNotNil Object x, Float y, Float z) {
         FiguraVec3 pos = LuaUtils.parseVec3("setPos", x, y, z);
-        cheatExecutor(plr -> plr.setPos(pos.asVec3()));
+        if (pos.notNaN())
+            cheatExecutor(plr -> plr.setPos(pos.asVec3()));
     }
 
     @LuaWhitelist
@@ -160,7 +206,8 @@ public class SillyAPI {
     )
     public void setVelocity(@LuaNotNil Object x, Float y, Float z) {
         FiguraVec3 vel = LuaUtils.parseVec3("setVelocity", x, y, z);
-        cheatExecutor(plr -> plr.setDeltaMovement(vel.asVec3()));
+        if (vel.notNaN())
+            cheatExecutor(plr -> plr.setDeltaMovement(vel.asVec3()));
     }
 
     @LuaWhitelist
@@ -179,10 +226,11 @@ public class SillyAPI {
     )
     public void setRot(@LuaNotNil Object x, Float y) {
         FiguraVec2 rot = LuaUtils.parseVec2("setRot", x, y);
-        cheatExecutor(plr -> {
-            plr.setXRot((float)rot.x);
-            plr.setYRot((float)rot.y);
-        });
+        if (!Double.isNaN(rot.x) && !Double.isNaN(rot.y))
+            cheatExecutor(plr -> {
+                plr.setXRot((float)rot.x);
+                plr.setYRot((float)rot.y);
+            });
     }
 
     @LuaWhitelist
@@ -268,6 +316,6 @@ public class SillyAPI {
 
     @Override
     public String toString() {
-        return "SillyAPI";
+        return "SillyAPI" + (cheatsEnabled() ? " (Cheats enabled)" : "");
     }
 }

@@ -8,5 +8,5 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 @Mixin(Minecraft.class)
 public interface MinecraftAccessor {
     @Accessor("authenticationService")
-    public YggdrasilAuthenticationService getAuthenticationService();
+    public YggdrasilAuthenticationService silly$getAuthenticationService();
 }

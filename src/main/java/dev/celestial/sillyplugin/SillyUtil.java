@@ -8,7 +8,6 @@ import net.minecraft.server.Services;
 import net.minecraft.world.entity.player.Player;
 import org.figuramc.figura.avatar.Avatar;
 import org.figuramc.figura.avatar.AvatarManager;
-import org.luaj.vm2.LuaError;
 
 import java.util.List;
 import java.util.Optional;
@@ -19,7 +18,7 @@ public class SillyUtil {
     public static Avatar getAvatar(String username) {
         Minecraft mc = Minecraft.getInstance();
         if (SillyUtil.services == null) {
-            SillyUtil.services = Services.create(((MinecraftAccessor)mc).getAuthenticationService(), mc.gameDirectory);
+            SillyUtil.services = Services.create(((MinecraftAccessor)mc).silly$getAuthenticationService(), mc.gameDirectory);
         }
         UUID uuid = null;
         if (mc.level == null) return null;

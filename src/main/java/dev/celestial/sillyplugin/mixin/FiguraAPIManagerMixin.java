@@ -27,6 +27,6 @@ public class FiguraAPIManagerMixin {
     static {
         WHITELISTED_CLASSES.add(SillyAPI.class);
 
-        API_GETTERS.put("silly", r -> new SillyAPI(r.owner));
+        API_GETTERS.put("silly", r -> ((AvatarAccessor)r.owner).silly$setSilly(new SillyAPI(r.owner)));
     }
 }

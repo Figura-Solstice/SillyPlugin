@@ -9,6 +9,7 @@ import net.minecraft.world.entity.player.Abilities;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import org.figuramc.figura.avatar.AvatarManager;
+import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
@@ -19,21 +20,13 @@ public abstract class LocalPlayerMixin extends Player {
         super(level, blockPos, f, gameProfile);
     }
 
-    @Redirect(method = "aiStep", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/player/LocalPlayer;getAbilities()Lnet/minecraft/world/entity/player/Abilities;", ordinal = 1))
-    public Abilities getAbilitiesMixin(LocalPlayer instance) {
-        Abilities orig = this.getAbilities();
+    @Redirect(method = "aiStep", at = @At(value = "FIELD", target = "Lnet/minecraft/world/entity/player/Abilities;mayfly:Z", opcode = Opcodes.GETFIELD))
+    public boolean getAbilitiesMixin(Abilities instance) {
         SillyAPI silly = SillyPluginClient.hostInstance;
-        if (silly == null) return orig;
-        if (!silly.mayFlyOverride) return orig;
-        if (AvatarManager.panic) return orig;
-        Abilities newA = new Abilities();
-        newA.mayfly = silly.mayFly;
-        newA.flying = orig.flying;
-        newA.instabuild = orig.instabuild;
-        newA.invulnerable = orig.invulnerable;
-        newA.mayBuild = orig.mayBuild;
-        newA.setFlyingSpeed(orig.getFlyingSpeed());
-        newA.setWalkingSpeed(orig.getWalkingSpeed());
-        return newA;
+        if (silly == null) return instance.mayfly;
+        if (!silly.mayFlyOverride) return instance.mayfly;
+        if (!silly.cheatsEnabled()) return instance.mayfly;
+        if (AvatarManager.panic) return instance.mayfly;
+        return silly.mayFly;
     }
 }

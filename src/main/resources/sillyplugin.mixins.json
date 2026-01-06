@@ -5,10 +5,14 @@
     "compatibilityLevel": "JAVA_17",
     "mixins": [
         "AvatarManagerMixin",
+        "AvatarMixin",
+        "EntityMixin",
         "FiguraAPIManagerMixin",
         "FiguraDocsManagerMixin",
         "FiguraGlobalsDocsMixin",
-        "LocalPlayerMixin"
+        "FiguraLuaRuntimeMixin",
+        "LocalPlayerMixin",
+        "PlayerMixin"
     ],
     "client": [
         "MinecraftAccessor"

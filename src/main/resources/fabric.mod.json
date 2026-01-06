@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "sillyplugin",
   "version": "${version}",
-  "name": "SillyPlugin",
+  "name": "Figura SillyPlugin",
   "description": "Spiritual successor to GoofyPlugin",
   "authors": [],
   "contact": {},
@@ -21,7 +21,5 @@
     "sillyplugin.mixins.json"
   ],
   "depends": {
-    "fabricloader": ">=${loader_version}",
-    "fabric-api": "*"
   }
 }

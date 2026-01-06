@@ -1,6 +1,6 @@
-package dev.celestial.sillyplugin.mixin;
+package dev.celestial.silly.mixin;
 
-import dev.celestial.sillyplugin.lua.SillyAPI;
+import dev.celestial.silly.lua.SillyAPI;
 import org.figuramc.figura.avatar.Avatar;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;

@@ -1,8 +1,7 @@
-package dev.celestial.sillyplugin.lua;
+package dev.celestial.silly.lua;
 
-import dev.celestial.sillyplugin.SillyPlugin;
-import dev.celestial.sillyplugin.SillyUtil;
-import dev.celestial.sillyplugin.client.SillyPluginClient;
+import dev.celestial.silly.SillyPlugin;
+import dev.celestial.silly.SillyUtil;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.multiplayer.ClientPacketListener;
@@ -48,12 +47,12 @@ public class SillyAPI {
     public boolean local;
 
     public SillyAPI(Avatar avatar) {
-        SillyPluginClient.FakeBlocks.put(avatar.id, new Hashtable<>());
+        SillyPlugin.FakeBlocks.put(avatar.id, new Hashtable<>());
         this.avatar = avatar;
         this.runtime = avatar.luaRuntime;
         this.minecraft = Minecraft.getInstance();
         local = avatar.isHost;
-        if (local) SillyPluginClient.hostInstance = this;
+        if (local) SillyPlugin.hostInstance = this;
     }
 
     public SillyAPI(FiguraLuaRuntime runtime) {
@@ -61,7 +60,7 @@ public class SillyAPI {
     }
 
     public void cleanup() {
-        SillyPluginClient.FakeBlocks.remove(avatar.id);
+        SillyPlugin.FakeBlocks.remove(avatar.id);
 
         if (!local) return; // START host cleanup
         if (minecraft.player != null) {
@@ -70,7 +69,7 @@ public class SillyAPI {
                 a.flying = false;
             }
         }
-        SillyPluginClient.hostInstance = null;
+        SillyPlugin.hostInstance = null;
     }
 
     public void cheatExecutor(Consumer<LocalPlayer> callback) {
@@ -99,7 +98,7 @@ public class SillyAPI {
     @LuaWhitelist
     @LuaMethodDoc("silly.get_bumpscocity")
     public Integer getBumpscocity() {
-        int value = avatar.permissions.get(SillyPluginClient.BUMPSCOCITY);
+        int value = avatar.permissions.get(SillyPlugin.BUMPSCOCITY);
         if (value > 1000) {
             throw new LuaError("Dear god, this is way too much bumpscocity! (1000 max)");
         }
@@ -124,19 +123,22 @@ public class SillyAPI {
 
     @LuaWhitelist
     public void setBlock(BlockStateAPI state) {
-        if (avatar.permissions.get(SillyPluginClient.FAKE_BLOCKS) != 1) {
-            avatar.noPermissions.add(SillyPluginClient.FAKE_BLOCKS);
-            return;
-        } else {
-            avatar.noPermissions.remove(SillyPluginClient.FAKE_BLOCKS);
-        }
-        if (minecraft.level != null) {
-            ClientLevel lvl = minecraft.level;
-            FiguraVec3 posFV3 = state.getPos().floor();
-            BlockPos pos = new BlockPos((int)posFV3.x, (int)posFV3.y, (int)posFV3.z);
-            SillyPluginClient.FakeBlocks.get(avatar.id).put(pos, state.blockState);
-            lvl.setBlock(pos, state.blockState, 2);
-        }
+        cheatExecutor(plr -> {
+            if (avatar.permissions.get(SillyPlugin.FAKE_BLOCKS) != 1) {
+                avatar.noPermissions.add(SillyPlugin.FAKE_BLOCKS);
+                return;
+            } else {
+                avatar.noPermissions.remove(SillyPlugin.FAKE_BLOCKS);
+            }
+            if (minecraft.level != null) {
+                ClientLevel lvl = minecraft.level;
+                FiguraVec3 posFV3 = state.getPos().floor();
+                BlockPos pos = new BlockPos((int)posFV3.x, (int)posFV3.y, (int)posFV3.z);
+                SillyPlugin.FakeBlocks.get(avatar.id).put(pos, state.blockState);
+                lvl.setBlock(pos, state.blockState, 2);
+            }
+        });
+
     }
 
     @LuaWhitelist

@@ -1,7 +1,6 @@
-package dev.celestial.sillyplugin.mixin;
+package dev.celestial.silly.mixin;
 
-import dev.celestial.sillyplugin.lua.SillyAPI;
-import net.fabricmc.loader.api.FabricLoader;
+import dev.celestial.silly.lua.SillyAPI;
 import org.figuramc.figura.lua.FiguraAPIManager;
 import org.figuramc.figura.lua.FiguraLuaRuntime;
 import org.spongepowered.asm.mixin.Final;

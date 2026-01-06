@@ -1,6 +1,6 @@
-package dev.celestial.sillyplugin.mixin;
+package dev.celestial.silly.mixin;
 
-import dev.celestial.sillyplugin.lua.SillyAPI;
+import dev.celestial.silly.lua.SillyAPI;
 import org.figuramc.figura.lua.docs.FiguraGlobalsDocs;
 import org.figuramc.figura.lua.docs.LuaFieldDoc;
 import org.spongepowered.asm.mixin.Mixin;

@@ -1,8 +1,7 @@
-package dev.celestial.sillyplugin.mixin;
+package dev.celestial.silly.mixin;
 
-import dev.celestial.sillyplugin.SillyPlugin;
-import dev.celestial.sillyplugin.client.SillyPluginClient;
-import dev.celestial.sillyplugin.lua.SillyAPI;
+import dev.celestial.silly.SillyPlugin;
+import dev.celestial.silly.lua.SillyAPI;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.player.Abilities;
 import org.figuramc.figura.FiguraMod;

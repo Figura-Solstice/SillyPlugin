@@ -1,8 +1,15 @@
 {
+    "package": "dev.celestial.silly.mixin",
     "required": true,
     "minVersion": "0.8",
-    "package": "dev.celestial.sillyplugin.mixin",
+    "injectors": {
+        "defaultRequire": 1
+    },
     "compatibilityLevel": "JAVA_17",
+    "client": [
+        "LocalPlayerMixin",
+        "MinecraftAccessor"
+    ],
     "mixins": [
         "AvatarManagerMixin",
         "AvatarMixin",
@@ -11,16 +18,6 @@
         "FiguraDocsManagerMixin",
         "FiguraGlobalsDocsMixin",
         "FiguraLuaRuntimeMixin",
-        "LocalPlayerMixin",
         "PlayerMixin"
-    ],
-    "client": [
-        "MinecraftAccessor"
-    ],
-    "injectors": {
-        "defaultRequire": 1
-    },
-    "overwrites": {
-        "requireAnnotations": true
-  }
+    ]
 }

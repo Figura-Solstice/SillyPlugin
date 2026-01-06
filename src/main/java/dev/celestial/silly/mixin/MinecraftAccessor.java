@@ -1,4 +1,4 @@
-package dev.celestial.sillyplugin.mixin;
+package dev.celestial.silly.mixin;
 
 import com.mojang.authlib.yggdrasil.YggdrasilAuthenticationService;
 import net.minecraft.client.Minecraft;

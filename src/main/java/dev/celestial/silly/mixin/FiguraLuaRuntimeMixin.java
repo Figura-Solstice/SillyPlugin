@@ -1,4 +1,4 @@
-package dev.celestial.sillyplugin.mixin;
+package dev.celestial.silly.mixin;
 
 import org.figuramc.figura.avatar.Avatar;
 import org.figuramc.figura.lua.FiguraLuaRuntime;
@@ -9,7 +9,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(FiguraLuaRuntime.class)
+@Mixin(value = FiguraLuaRuntime.class, remap = false)
 public class FiguraLuaRuntimeMixin {
     @Shadow
     @Final

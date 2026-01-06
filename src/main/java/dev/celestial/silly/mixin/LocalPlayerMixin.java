@@ -1,8 +1,8 @@
-package dev.celestial.sillyplugin.mixin;
+package dev.celestial.silly.mixin;
 
 import com.mojang.authlib.GameProfile;
-import dev.celestial.sillyplugin.client.SillyPluginClient;
-import dev.celestial.sillyplugin.lua.SillyAPI;
+import dev.celestial.silly.SillyPlugin;
+import dev.celestial.silly.lua.SillyAPI;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.player.Abilities;
@@ -22,7 +22,7 @@ public abstract class LocalPlayerMixin extends Player {
 
     @Redirect(method = "aiStep", at = @At(value = "FIELD", target = "Lnet/minecraft/world/entity/player/Abilities;mayfly:Z", opcode = Opcodes.GETFIELD))
     public boolean getAbilitiesMixin(Abilities instance) {
-        SillyAPI silly = SillyPluginClient.hostInstance;
+        SillyAPI silly = SillyPlugin.hostInstance;
         if (silly == null) return instance.mayfly;
         if (!silly.mayFlyOverride) return instance.mayfly;
         if (!silly.cheatsEnabled()) return instance.mayfly;

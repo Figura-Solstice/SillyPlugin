@@ -1,7 +1,7 @@
-package dev.celestial.sillyplugin;
+package dev.celestial.silly;
 
 import com.mojang.authlib.GameProfile;
-import dev.celestial.sillyplugin.mixin.MinecraftAccessor;
+import dev.celestial.silly.mixin.MinecraftAccessor;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.server.Services;

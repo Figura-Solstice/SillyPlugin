@@ -58,7 +58,7 @@ modstitch {
         fabricLoaderVersion = "0.16.10"
         // Configure loom like normal in this block.
         configureLoom {
-
+//            accessWidenerPath = rootProject.file("src/main/resources/sillyplugin.accesswidener")
         }
     }
 
@@ -77,18 +77,20 @@ modstitch {
         // This block configures the `neoforge` extension that MDG exposes by default,
         // you can configure MDG like normal from here
         configureNeoforge {
+//            accessTransformers.from(rootProject.file("src/main/resources/META-INF/accesstransformer.cfg"))
+
             runs.all {
                 disableIdeRun()
             }
         }
     }
 
-    mixin {
+    mixin { // re-enable if modstitch fixes mixins being added multiple times
         // You do not need to specify mixins in any mods.json/toml file if this is set to
         // true, it will automatically be generated.
-        addMixinsToModManifest = true
+        addMixinsToModManifest = false
 
-        configs.register("sillyplugin")
+//        configs.register("sillyplugin")
 
         // Most of the time you wont ever need loader specific mixins.
         // If you do, simply make the mixin file and add it like so for the respective loader:

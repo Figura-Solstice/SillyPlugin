@@ -1,5 +1,6 @@
 package dev.celestial.silly.lua;
 
+import dev.celestial.silly.SillyEnums;
 import dev.celestial.silly.SillyPlugin;
 import dev.celestial.silly.SillyUtil;
 import net.minecraft.client.Minecraft;
@@ -8,6 +9,7 @@ import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.player.Abilities;
+import net.minecraft.world.level.block.state.BlockState;
 import org.apache.commons.lang3.ObjectUtils;
 import org.figuramc.figura.FiguraMod;
 import org.figuramc.figura.avatar.Avatar;
@@ -20,6 +22,7 @@ import org.figuramc.figura.lua.FiguraLuaRuntime;
 import org.figuramc.figura.lua.LuaNotNil;
 import org.figuramc.figura.lua.LuaWhitelist;
 import org.figuramc.figura.lua.api.world.BlockStateAPI;
+import org.figuramc.figura.lua.api.world.WorldAPI;
 import org.figuramc.figura.lua.docs.LuaMethodDoc;
 import org.figuramc.figura.lua.docs.LuaMethodOverload;
 import org.figuramc.figura.lua.docs.LuaTypeDoc;
@@ -31,7 +34,9 @@ import org.luaj.vm2.LuaError;
 import org.luaj.vm2.LuaTable;
 
 import java.nio.file.Path;
+import java.util.HashSet;
 import java.util.Hashtable;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
@@ -45,9 +50,10 @@ public class SillyAPI {
     public boolean mayFly = false;
     public boolean noclip = false;
     public boolean local;
+    public Set<SillyEnums.GUI_ELEMENT> disabledElements = new HashSet<>();
 
     public SillyAPI(Avatar avatar) {
-        SillyPlugin.FakeBlocks.put(avatar.id, new Hashtable<>());
+        SillyPlugin.FakeBlocks.put(avatar.owner, new Hashtable<>());
         this.avatar = avatar;
         this.runtime = avatar.luaRuntime;
         this.minecraft = Minecraft.getInstance();
@@ -60,9 +66,10 @@ public class SillyAPI {
     }
 
     public void cleanup() {
-        SillyPlugin.FakeBlocks.remove(avatar.id);
+        SillyPlugin.FakeBlocks.remove(avatar.owner);
 
         if (!local) return; // START host cleanup
+        cheatExecutor(plr -> SillyUtil.antiGhost());
         if (minecraft.player != null) {
             Abilities a = minecraft.player.getAbilities();
             if (a.flying && !a.mayfly && this.mayFly && this.mayFlyOverride) {
@@ -73,7 +80,11 @@ public class SillyAPI {
     }
 
     public void cheatExecutor(Consumer<LocalPlayer> callback) {
-        if (!local) return;
+        cheatExecutor(callback, true);
+    }
+
+    public void cheatExecutor(Consumer<LocalPlayer> callback, boolean mustBeHost) {
+        if (mustBeHost && !local) return;
         if (!(minecraft.player instanceof LocalPlayer)) return;
         if (minecraft.gameMode == null) return;
         if (!(minecraft.player.hasPermissions(2) || minecraft.gameMode.getPlayerMode().isCreative() || minecraft.isSingleplayer() || minecraft.player.getTags().contains("silly_cheats_allowed"))) return;
@@ -107,6 +118,38 @@ public class SillyAPI {
 
     @LuaWhitelist
     @LuaMethodDoc(
+            value = "silly.set_hud_element_visible",
+            overloads = {
+                    @LuaMethodOverload(
+                            argumentTypes = {SillyEnums.GUI_ELEMENT.class, Boolean.class},
+                            argumentNames = { "element", "state" }
+                    ),
+                    @LuaMethodOverload(
+                            argumentTypes = {SillyEnums.GUI_ELEMENT.class},
+                            argumentNames = { "element" }
+                    )
+            },
+            aliases = { "setRenderHudElement" }
+    )
+    public SillyAPI setHudElementVisible(@LuaNotNil String element, Boolean state) {
+        if (!local) return this;
+        SillyEnums.GUI_ELEMENT el = SillyEnums.GUI_ELEMENT.valueOf(element);
+        if (state == null) state = disabledElements.contains(el);
+        if (state) {
+            disabledElements.remove(el);
+        } else {
+            disabledElements.add(el);
+        }
+        return this;
+    }
+
+    @LuaWhitelist
+    public SillyAPI setRenderHudElement(@LuaNotNil String element, Boolean state) {
+        return setHudElementVisible(element, state);
+    }
+
+    @LuaWhitelist
+    @LuaMethodDoc(
             value = "silly.set_noclip",
             overloads = {
                     @LuaMethodOverload(
@@ -121,8 +164,7 @@ public class SillyAPI {
         });
     }
 
-    @LuaWhitelist
-    public void setBlock(BlockStateAPI state) {
+    private void setBlockInternal(BlockPos pos, BlockState state) {
         cheatExecutor(plr -> {
             if (avatar.permissions.get(SillyPlugin.FAKE_BLOCKS) != 1) {
                 avatar.noPermissions.add(SillyPlugin.FAKE_BLOCKS);
@@ -132,14 +174,46 @@ public class SillyAPI {
             }
             if (minecraft.level != null) {
                 ClientLevel lvl = minecraft.level;
-                FiguraVec3 posFV3 = state.getPos().floor();
-                BlockPos pos = new BlockPos((int)posFV3.x, (int)posFV3.y, (int)posFV3.z);
-                SillyPlugin.FakeBlocks.get(avatar.id).put(pos, state.blockState);
-                lvl.setBlock(pos, state.blockState, 2);
+                SillyPlugin.FakeBlocks.get(avatar.owner).put(pos, state);
+                lvl.setBlock(pos, state, 2);
             }
-        });
-
+        }, false);
     }
+
+    @LuaWhitelist
+    @LuaMethodDoc(
+            value = "set_block",
+            overloads = {
+                    @LuaMethodOverload(
+                            argumentNames = { "pos", "block" },
+                            argumentTypes = { FiguraVec3.class, BlockStateAPI.class }
+                    ),
+                    @LuaMethodOverload(
+                            argumentNames = { "pos", "block" },
+                            argumentTypes = { FiguraVec3.class, String.class }
+                    ),
+                    @LuaMethodOverload(
+                            argumentNames = { "blockstate" },
+                            argumentTypes = { BlockStateAPI.class }
+                    )
+            }
+    )
+    public void setBlock(Object pos, Object block) {
+        if (pos instanceof BlockStateAPI state) {
+            BlockPos bpos = state.getPos().asBlockPos();
+            setBlockInternal(bpos, state.blockState);
+        } else if (pos instanceof FiguraVec3 posFV3) {
+            if (block instanceof BlockStateAPI state) {
+                setBlockInternal(posFV3.asBlockPos(), state.blockState);
+            } else if (block instanceof String stackString) {
+                BlockStateAPI bs = WorldAPI.newBlock(stackString, null, null, null);
+                setBlock(posFV3, bs);
+            } else if (block == null) {
+                SillyPlugin.FakeBlocks.get(avatar.owner).remove(pos);
+            }
+        }
+    }
+
 
     @LuaWhitelist
     @LuaMethodDoc(
@@ -153,7 +227,8 @@ public class SillyAPI {
                     argumentNames = {},
                     argumentTypes = {}
             )
-        }
+        },
+        aliases = { "setCanFly" }
     )
     public void setFly(Boolean mayFly) {
         cheatExecutor(plr -> {
@@ -172,6 +247,10 @@ public class SillyAPI {
         setFly(canFly);
     }
 
+    public boolean isVectorOkay(FiguraVec3 vec) {
+        return vec.notNaN() && Double.isFinite(vec.x) && Double.isFinite(vec.y) && Double.isFinite(vec.z);
+    }
+
     @LuaWhitelist
     @LuaMethodDoc(
             value = "silly.set_pos",
@@ -188,7 +267,7 @@ public class SillyAPI {
     )
     public void setPos(@LuaNotNil Object x, Float y, Float z) {
         FiguraVec3 pos = LuaUtils.parseVec3("setPos", x, y, z);
-        if (pos.notNaN())
+        if (isVectorOkay(pos))
             cheatExecutor(plr -> plr.setPos(pos.asVec3()));
     }
 
@@ -208,7 +287,7 @@ public class SillyAPI {
     )
     public void setVelocity(@LuaNotNil Object x, Float y, Float z) {
         FiguraVec3 vel = LuaUtils.parseVec3("setVelocity", x, y, z);
-        if (vel.notNaN())
+        if (isVectorOkay(vel))
             cheatExecutor(plr -> plr.setDeltaMovement(vel.asVec3()));
     }
 
@@ -304,6 +383,8 @@ public class SillyAPI {
         AvatarList.selectedEntry = avatarPath;
     }
 
+    // supposedly this function was problematic as a command.
+    /*
     @LuaWhitelist
     @LuaMethodDoc(value = "silly.upload_avatar")
     public void uploadAvatar() {
@@ -315,6 +396,7 @@ public class SillyAPI {
         NetworkStuff.uploadAvatar(avatar);
         AvatarList.selectedEntry = null;
     }
+    */
 
     @Override
     public String toString() {

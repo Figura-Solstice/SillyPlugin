@@ -1,5 +1,7 @@
 package dev.celestial.silly.mixin;
 
+import dev.celestial.silly.lua.SillyAPI;
+import dev.celestial.silly.not_a_mixin.AvatarAccessor;
 import org.figuramc.figura.avatar.Avatar;
 import org.figuramc.figura.lua.FiguraLuaRuntime;
 import org.spongepowered.asm.mixin.Final;
@@ -17,6 +19,7 @@ public class FiguraLuaRuntimeMixin {
 
     @Inject(method="error", at = @At("HEAD"))
     public void errorMixin(Throwable e, CallbackInfo ci) {
-        ((AvatarAccessor)owner).silly$getSilly().cleanup();
+        SillyAPI silly = ((AvatarAccessor)owner).silly$getSilly();
+        if (silly != null) silly.cleanup();
     }
 }

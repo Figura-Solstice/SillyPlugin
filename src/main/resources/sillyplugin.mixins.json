@@ -7,8 +7,14 @@
     },
     "compatibilityLevel": "JAVA_17",
     "client": [
+        "ClientPacketListenerMixin",
         "LocalPlayerMixin",
-        "MinecraftAccessor"
+        "MinecraftAccessor",
+        "hud.BossHealthOverlayMixin",
+        "hud.ChatComponentMixin",
+        "hud.GuiMixin",
+        "hud.PlayerTabOverlayMixin",
+        "hud.SubtitleOverlayMixin"
     ],
     "mixins": [
         "AvatarManagerMixin",
@@ -17,6 +23,7 @@
         "FiguraAPIManagerMixin",
         "FiguraDocsManagerMixin",
         "FiguraGlobalsDocsMixin",
+        "FiguraListDocsMixin",
         "FiguraLuaRuntimeMixin",
         "PlayerMixin"
     ]

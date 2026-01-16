@@ -14,10 +14,11 @@
     "figura.docs.silly.cat": "Sends meow in chat, because half of figura are cats in disguise.",
     "figura.docs.silly.get_bumpscocity": "Gets the current bumpscocity.",
     "figura.docs.silly.what_does_bumpscocity_do": "Tells you what bumpscocity does.",
+    "figura.docs.silly.set_block": "Sets a fake block in the world.\nSetting a block to nil removes the fake one.\nRequires cheats (but runs on clients!)",
+    "figura.docs.silly.set_hud_element_visible": "Sets the visibility of a hud element.",
     "sillyplugin.permissions.value.bumpscocity": "Bumpscocity",
     "sillyplugin.permissions.value.bumpscocity.tooltip": "silly:whatDoesBumpscocityDo()",
     "sillyplugin.permissions.value.fake_blocks": "Fake blocks",
-    "sillyplugin.permissions.value.fake_blocks.tooltip": "Allows creating ghost blocks.",
-    "sillyplugin.permissions.value.colliders": "Colliders",
-    "sillyplugin.permissions.value.colliders.tooltip": "Allows defining custom solid collision boxes."
+    "figura.badges.no_permissions.fake_blocks": "Fake blocks",
+    "sillyplugin.permissions.value.fake_blocks.tooltip": "Allows creating ghost blocks."
 }

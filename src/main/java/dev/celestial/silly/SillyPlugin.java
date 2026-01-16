@@ -1,6 +1,5 @@
 package dev.celestial.silly;
 
-import com.mojang.logging.LogUtils;
 import dev.celestial.silly.lua.SillyAPI;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.state.BlockState;
@@ -12,14 +11,21 @@ import org.slf4j.Logger;
 import java.util.Dictionary;
 import java.util.Hashtable;
 import java.util.List;
+import java.util.UUID;
 
 public class SillyPlugin {
-    public static final Logger LOGGER = LogUtils.getLogger();
     public static SillyAPI hostInstance;
     public static Permissions BUMPSCOCITY = new Permissions("BUMPSCOCITY", 0, 1000, 0, 0, 0, 0, 0);
     public static Permissions FAKE_BLOCKS = new Permissions("FAKE_BLOCKS", 0, 0, 0, 0, 1);
-    public static Permissions COLLIDERS = new Permissions("COLLIDERS", 0, 0, 0, 0, 1);
-    public static Dictionary<String, Dictionary<BlockPos, BlockState>> FakeBlocks = new Hashtable<>();
+//    public static Permissions COLLIDERS = new Permissions("COLLIDERS", 0, 0, 0, 0, 1);
+    public static Dictionary<UUID, Dictionary<BlockPos, BlockState>> FakeBlocks = new Hashtable<>();
+
+    public static boolean shouldHide(SillyEnums.GUI_ELEMENT el) {
+        if (hostInstance == null) return false;
+        if (AvatarManager.panic) return false;
+        if (!hostInstance.cheatsEnabled()) return false;
+        return hostInstance.disabledElements.contains(el);
+    }
 
     public static boolean shouldNoclip() {
         if (hostInstance == null) return false;
@@ -29,6 +35,6 @@ public class SillyPlugin {
     }
 
     public static void initialize() {
-        PermissionManager.CUSTOM_PERMISSIONS.put("sillyplugin", List.of(BUMPSCOCITY, FAKE_BLOCKS, COLLIDERS));
+        PermissionManager.CUSTOM_PERMISSIONS.put("sillyplugin", List.of(BUMPSCOCITY, FAKE_BLOCKS/*, COLLIDERS*/));
     }
 }

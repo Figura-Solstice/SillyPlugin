@@ -1,4 +1,4 @@
-package dev.celestial.silly.mixin;
+package dev.celestial.silly.not_a_mixin;
 
 import dev.celestial.silly.lua.SillyAPI;
 

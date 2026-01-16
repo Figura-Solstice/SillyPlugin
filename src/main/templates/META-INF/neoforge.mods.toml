@@ -20,3 +20,6 @@ clientSideOnly = true
 [[dependencies.${mod_id}]]
     modId = "minecraft"
     type = "required"
+
+[[mixins]]
+config = "sillyplugin.mixins.json"

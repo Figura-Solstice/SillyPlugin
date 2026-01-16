@@ -3,7 +3,11 @@ package dev.celestial.silly;
 import com.mojang.authlib.GameProfile;
 import dev.celestial.silly.mixin.MinecraftAccessor;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.client.player.AbstractClientPlayer;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
 import net.minecraft.server.Services;
 import net.minecraft.world.entity.player.Player;
 import org.figuramc.figura.avatar.Avatar;
@@ -47,5 +51,24 @@ public class SillyUtil {
         }
 
         return AvatarManager.getAvatarForPlayer(uuid);
+    }
+
+    // Code derived from
+    public static void antiGhost() {
+        Minecraft mc = Minecraft.getInstance();
+        ClientPacketListener conn = mc.getConnection();
+        if (conn == null)
+            return;
+        BlockPos pos = mc.player.blockPosition();
+        for (int dx = -4; dx <= 4; dx++)
+            for (int dy = -4; dy <= 4; dy++)
+                for (int dz = -4; dz <= 4; dz++) {
+                    ServerboundPlayerActionPacket packet = new ServerboundPlayerActionPacket(
+                            ServerboundPlayerActionPacket.Action.ABORT_DESTROY_BLOCK,
+                            new BlockPos(pos.getX() + dx, pos.getY() + dy, pos.getZ() + dz),
+                            Direction.UP // with ABORT_DESTROY_BLOCK, this value is unused
+                    );
+                    conn.send(packet);
+                }
     }
 }

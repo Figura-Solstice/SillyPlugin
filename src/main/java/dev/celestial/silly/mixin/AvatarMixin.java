@@ -1,6 +1,7 @@
 package dev.celestial.silly.mixin;
 
 import dev.celestial.silly.lua.SillyAPI;
+import dev.celestial.silly.not_a_mixin.AvatarAccessor;
 import org.figuramc.figura.avatar.Avatar;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;

@@ -11,8 +11,13 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(ChatComponent.class)
 public class ChatComponentMixin {
+
     @Inject(method = "render", at = @At("HEAD"), cancellable = true)
+    //? if >=1.21 {
+    /*public void renderMixin(GuiGraphics guiGraphics, int i, int j, int k, boolean bl, CallbackInfo ci) {
+    *///?} else {
     public void renderMixin(GuiGraphics guiGraphics, int i, int j, int k, CallbackInfo ci) {
+     //?}
         if (SillyPlugin.shouldHide(SillyEnums.GUI_ELEMENT.CHAT)) ci.cancel();
     }
 }

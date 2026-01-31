@@ -125,20 +125,32 @@ public class SillyAPI {
                             argumentNames = { "element", "state" }
                     ),
                     @LuaMethodOverload(
+                            argumentTypes = {LuaTable.class, Boolean.class},
+                            argumentNames = { "elements", "state" }
+                    ),
+                    @LuaMethodOverload(
                             argumentTypes = {SillyEnums.GUI_ELEMENT.class},
                             argumentNames = { "element" }
                     )
             },
             aliases = { "setRenderHudElement" }
     )
-    public SillyAPI setHudElementVisible(@LuaNotNil String element, Boolean state) {
+    public SillyAPI setHudElementVisible(@LuaNotNil Object elements, Boolean state) {
         if (!local) return this;
-        SillyEnums.GUI_ELEMENT el = SillyEnums.GUI_ELEMENT.valueOf(element);
-        if (state == null) state = disabledElements.contains(el);
-        if (state) {
-            disabledElements.remove(el);
+        if (elements instanceof LuaTable tbl) {
+            for (int i = 1; i < tbl.length()+1; i++) {
+                setHudElementVisible(tbl.get(i), state);
+            }
+        } else if (elements instanceof String element) {
+            SillyEnums.GUI_ELEMENT el = SillyEnums.GUI_ELEMENT.valueOf(element);
+            if (state == null) state = disabledElements.contains(el);
+            if (state) {
+                disabledElements.remove(el);
+            } else {
+                disabledElements.add(el);
+            }
         } else {
-            disabledElements.add(el);
+            throw new LuaError("Expected list or string for first argument, received " + elements.getClass().getSimpleName());
         }
         return this;
     }

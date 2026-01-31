@@ -34,6 +34,7 @@ modstitch {
         modVersion = "1.0.0"
         modGroup = "dev.celestial"
         modAuthor = "Niko Solstice"
+        modDescription = "Spiritual successor of GoofyPlugin.\nCredits:\nTheKillerBunny for making goofyplugin.\nSam ★ for being so cool fr"
 
         fun <K, V> MapProperty<K, V>.populate(block: MapProperty<K, V>.() -> Unit) {
             block()
@@ -126,20 +127,14 @@ fun figura(loader: String): String {
 dependencies {
     modstitch.loom {
         modstitchModImplementation("net.fabricmc.fabric-api:fabric-api:0.112.0+1.21.4")
-//        modstitchModImplementation(figura("fabric"))
+        modstitchModImplementation(figura("fabric"))
     }
-//    modstitch.moddevgradle {
-//        if (modstitch.isModDevGradleRegular) {
-//            modstitchModImplementation(figura("neoforge"))
-//        } else {
-//            modstitchModImplementation(figura("forge"))
-//        }
-//    }
+    modstitch.moddevgradle {
+        modstitchModImplementation(figura("neoforge"))
+    }
 
-    modstitchModImplementation(figura("common-mojmap"))
-    modstitchCompileOnly("com.github.FiguraMC.luaj:luaj-core:$luaj_version-figura")
-    modstitchCompileOnly("com.github.FiguraMC.luaj:luaj-jse:$luaj_version-figura")
-    modstitchCompileOnly("com.neovisionaries:nv-websocket-client:$nv_websocket_version")
-
-    // Anything else in the dependencies block will be used for all platforms.
+//    modstitchCompileOnly(figura("common-mojmap"))
+    compileOnly("com.github.FiguraMC.luaj:luaj-core:$luaj_version-figura")
+    compileOnly("com.github.FiguraMC.luaj:luaj-jse:$luaj_version-figura")
+    compileOnly("com.neovisionaries:nv-websocket-client:$nv_websocket_version")
 }

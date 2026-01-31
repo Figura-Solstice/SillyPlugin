@@ -27,15 +27,4 @@ public class EntityMixin {
     public boolean moveMixin(Entity instance, Operation<Boolean> original) {
         return original.call(instance) || SillyPlugin.shouldNoclip();
     }
-
-    @ModifyVariable(
-            method = "collideBoundingBox",
-            at = @At("HEAD"),
-            argsOnly = true
-    )
-    private static List<VoxelShape> collideBoundingBoxMixin(List<VoxelShape> orig, @Nullable Entity entity) {
-        List<VoxelShape> value = new ArrayList<>(orig);
-        value.add(Shapes.create(new AABB(0, 0, 0, 8, 8, 8)));
-        return value;
-    }
 }

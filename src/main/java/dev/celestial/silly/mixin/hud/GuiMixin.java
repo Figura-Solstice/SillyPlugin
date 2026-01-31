@@ -60,7 +60,11 @@ public class GuiMixin {
         silly$cancelIfHidden(SillyEnums.GUI_ELEMENT.PLAYER_HEALTH, ci);
     }
 
+    //? if neoforge && >=1.21 {
+    /*@WrapOperation(method = "renderFoodLevel", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/Gui;getVehicleMaxHearts(Lnet/minecraft/world/entity/LivingEntity;)I"))
+    *///?} else {
     @WrapOperation(method = "renderPlayerHealth", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/Gui;getVehicleMaxHearts(Lnet/minecraft/world/entity/LivingEntity;)I"))
+    //?}
     public int renderPlayerHealthMixin(Gui instance, LivingEntity i, Operation<Integer> original) {
         if (SillyPlugin.shouldHide(SillyEnums.GUI_ELEMENT.PLAYER_HUNGER)) return 1;
         return original.call(instance, i);
@@ -91,8 +95,14 @@ public class GuiMixin {
         silly$cancelIfHidden(SillyEnums.GUI_ELEMENT.PORTAL_OVERLAY, ci);
     }
 
+
+
     @Inject(method = "renderEffects", at = @At("HEAD"), cancellable = true)
+    //? if >=1.21 {
+    /*public void renderEffectsMixin(GuiGraphics guiGraphics, DeltaTracker deltaTracker, CallbackInfo ci) {
+    *///?} else {
     public void renderEffectsMixin(GuiGraphics guiGraphics, CallbackInfo ci) {
+    //?}
         silly$cancelIfHidden(SillyEnums.GUI_ELEMENT.EFFECTS, ci);
     }
 }

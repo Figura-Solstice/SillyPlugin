@@ -5,6 +5,21 @@
     "version": "${mod_version}",
     "description": "${mod_description}",
     "environment": "client",
+    "icon": "assets/sillyplugin/icon.png",
+    "authors": [
+        "Niko Solstice"
+    ],
+    "contributors": [
+        {
+            "name": "TheKillerBunny: Making goofyplugin"
+        },
+        {
+            "name": "Sam ★: Being so cool fr"
+        },
+        {
+            "name": "cosmic_the_cat: Creating the icon for the plugin"
+        }
+    ],
     "entrypoints": {
         "main": [
             "dev.celestial.silly.loaders.fabric.FabricEntrypoint"
@@ -16,5 +31,6 @@
             "environment": "*"
         }
     ],
-    "accessWidener": "sillyplugin.accesswidener"
+    "accessWidener": "sillyplugin.accesswidener",
+    "license": "${mod_license}"
 }

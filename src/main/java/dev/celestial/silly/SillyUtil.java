@@ -59,6 +59,7 @@ public class SillyUtil {
         ClientPacketListener conn = mc.getConnection();
         if (conn == null)
             return;
+        assert mc.player != null;
         BlockPos pos = mc.player.blockPosition();
         for (int dx = -4; dx <= 4; dx++)
             for (int dy = -4; dy <= 4; dy++)

@@ -10,6 +10,7 @@ clientSideOnly = true
     displayName = "${mod_name}"
     description = '''${mod_description}'''
     authors = "${mod_author}"
+    logoFile= "assets/sillyplugin/icon.png"
 
 [[dependencies.${mod_id}]]
     modId = "neoforge"

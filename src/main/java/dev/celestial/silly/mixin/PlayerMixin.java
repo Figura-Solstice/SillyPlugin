@@ -12,6 +12,6 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 public class PlayerMixin {
     @WrapOperation(method="tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/player/Player;isSpectator()Z"))
     public boolean tickMixin(Player instance, Operation<Boolean> original) {
-        return original.call(instance) || SillyPlugin.shouldNoclip();
+        return original.call(instance) || SillyPlugin.shouldNoclip(instance);
     }
 }

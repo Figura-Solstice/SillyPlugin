@@ -87,7 +87,10 @@ public class SillyAPI {
         if (mustBeHost && !local) return;
         if (!(minecraft.player instanceof LocalPlayer)) return;
         if (minecraft.gameMode == null) return;
-        if (!(minecraft.player.hasPermissions(2) || minecraft.gameMode.getPlayerMode().isCreative() || minecraft.isSingleplayer() || minecraft.player.getTags().contains("silly_cheats_allowed"))) return;
+        if (!(minecraft.player.hasPermissions(2)
+                || minecraft.gameMode.getPlayerMode().isCreative()
+                || minecraft.isSingleplayer()
+                || minecraft.player.getTags().contains("silly_cheats_allowed"))) return;
         callback.accept(minecraft.player);
     }
 
@@ -184,7 +187,7 @@ public class SillyAPI {
             } else {
                 avatar.noPermissions.remove(SillyPlugin.FAKE_BLOCKS);
             }
-            if (minecraft.level != null) {
+            if (minecraft.level != null && minecraft.level.isClientSide) {
                 ClientLevel lvl = minecraft.level;
                 SillyPlugin.FakeBlocks.get(avatar.owner).put(pos, state);
                 lvl.setBlock(pos, state, 2);

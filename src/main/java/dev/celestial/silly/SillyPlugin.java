@@ -2,6 +2,9 @@ package dev.celestial.silly;
 
 import dev.celestial.silly.lua.SillyAPI;
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.block.state.BlockState;
 import org.figuramc.figura.avatar.AvatarManager;
 import org.figuramc.figura.permissions.PermissionManager;
@@ -27,11 +30,15 @@ public class SillyPlugin {
         return hostInstance.disabledElements.contains(el);
     }
 
-    public static boolean shouldNoclip() {
+    public static boolean shouldNoclip(Entity entity) {
         if (hostInstance == null) return false;
         if (AvatarManager.panic) return false;
         if (!hostInstance.cheatsEnabled()) return false;
-        return hostInstance.noclip;
+        if (entity instanceof Player plr) {
+            if (plr.isLocalPlayer() || (plr.getServer() != null && !plr.getServer().isDedicatedServer()))
+                return hostInstance.noclip;
+        }
+        return false;
     }
 
     public static void initialize() {

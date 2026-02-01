@@ -25,6 +25,6 @@ import java.util.List;
 public class EntityMixin {
     @WrapOperation(method = "move", at= @At(value = "FIELD", target = "Lnet/minecraft/world/entity/Entity;noPhysics:Z", opcode = Opcodes.GETFIELD))
     public boolean moveMixin(Entity instance, Operation<Boolean> original) {
-        return original.call(instance) || SillyPlugin.shouldNoclip();
+        return original.call(instance) || SillyPlugin.shouldNoclip(instance);
     }
 }

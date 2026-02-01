@@ -34,7 +34,14 @@ modstitch {
         modVersion = "1.0.0"
         modGroup = "dev.celestial"
         modAuthor = "Niko Solstice"
-        modDescription = "Spiritual successor of GoofyPlugin.\nCredits:\nTheKillerBunny for making goofyplugin.\nSam ★ for being so cool fr"
+        modDescription = "Spiritual successor of GoofyPlugin."
+        val creds = arrayOf(
+            "TheKillerBunny: for making GoofyPlugin",
+            "Sam ★: Being so cool fr",
+            "cosmic_the_cat: Creating the icon for the plugin"
+        )
+        modCredits = creds.joinToString("\n");
+        modLicense = "MIT"
 
         fun <K, V> MapProperty<K, V>.populate(block: MapProperty<K, V>.() -> Unit) {
             block()

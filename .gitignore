@@ -1,6 +1,8 @@
 # User-specific stuff
 .idea/
 
+silly_out/
+
 *.iml
 *.ipr
 *.iws

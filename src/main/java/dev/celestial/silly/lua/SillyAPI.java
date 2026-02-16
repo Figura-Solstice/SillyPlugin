@@ -6,8 +6,11 @@ import dev.celestial.silly.SillyUtil;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.multiplayer.ClientPacketListener;
+import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.Style;
 import net.minecraft.world.entity.player.Abilities;
 import net.minecraft.world.level.block.state.BlockState;
 import org.apache.commons.lang3.ObjectUtils;
@@ -18,6 +21,7 @@ import org.figuramc.figura.avatar.local.LocalAvatarFetcher;
 import org.figuramc.figura.avatar.local.LocalAvatarLoader;
 import org.figuramc.figura.backend2.NetworkStuff;
 import org.figuramc.figura.gui.widgets.lists.AvatarList;
+import org.figuramc.figura.lua.FiguraLuaPrinter;
 import org.figuramc.figura.lua.FiguraLuaRuntime;
 import org.figuramc.figura.lua.LuaNotNil;
 import org.figuramc.figura.lua.LuaWhitelist;
@@ -87,10 +91,16 @@ public class SillyAPI {
         if (mustBeHost && !local) return;
         if (!(minecraft.player instanceof LocalPlayer)) return;
         if (minecraft.gameMode == null) return;
+
+        ClientPacketListener con = minecraft.getConnection();
+        if (con == null) return;
+        ServerData servDt = con.getServerData();
+        Component motd = servDt != null ? servDt.motd : Component.empty();
+
         if (!(minecraft.player.hasPermissions(2)
                 || minecraft.gameMode.getPlayerMode().isCreative()
                 || minecraft.isSingleplayer()
-                || minecraft.player.getTags().contains("silly_cheats_allowed"))) return;
+                || motd.getString().contains("§s§i§l§l§y§p§l§u§g§i§n"))) return;
         callback.accept(minecraft.player);
     }
 

@@ -1,6 +1,7 @@
 #!/bin/bash
 mkdir -p ./silly_out
 rm ./silly_out/*
+./gradlew clean
 ./gradlew chiseledBuild
 
 for dir in ./versions/*/; do

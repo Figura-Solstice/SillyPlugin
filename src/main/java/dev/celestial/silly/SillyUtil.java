@@ -54,6 +54,7 @@ public class SillyUtil {
     }
 
     // Code derived from
+    // https://github.com/gbl/AntiGhost
     public static void antiGhost() {
         Minecraft mc = Minecraft.getInstance();
         ClientPacketListener conn = mc.getConnection();

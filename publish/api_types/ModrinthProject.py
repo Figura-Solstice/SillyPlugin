@@ -1,0 +1,37 @@
+from datetime import datetime
+
+
+class ModrinthProject:
+    def __init__(self, res: dict):
+        self.id = res.pop("id")
+        self.slug = res.pop("slug")
+        self.title = res.pop("title")
+        self.description = res.pop("description")
+        self.body = res.pop("body")
+        self.status = res.pop("status")
+        self.client_side = res.pop("client_side")
+        self.server_side = res.pop("server_side")
+        self.published = datetime.fromisoformat(res.pop("published"))
+        self.updated = datetime.fromisoformat(res.pop("updated"))
+        self.downloads = res.pop("downloads")
+        self.followers = res.pop("followers")
+        self.monetization_status = res.pop("monetization_status")
+        self.game_versions = res.pop("game_versions")
+        self.loaders = res.pop("loaders")
+        self.categories = res.pop("categories")
+        self.additional_categories = res.pop("additional_categories")
+        self.icon_url = res.pop("icon_url")
+        self.source_url = res.pop("source_url")
+        self.wiki_url = res.pop("wiki_url")
+        self.issues_url = res.pop("issues_url")
+        self.discord_url = res.pop("discord_url")
+        self.donation_urls = res.pop("donation_urls")
+        self.team = res.pop("team")
+        self.organization = res.pop("organization")
+        self.license = res.pop("license")
+        self.gallery = res.pop("gallery")
+        self.project_type = res.pop("project_type")
+        self.requested_status = res.pop("requested_status")
+        self.thread_id = res.pop("thread_id")
+        self.color = res.pop("color")
+

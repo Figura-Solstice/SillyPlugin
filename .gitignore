@@ -2,6 +2,7 @@
 .idea/
 
 silly_out/
+/publish/mr_key.txt
 
 *.iml
 *.ipr

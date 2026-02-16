@@ -32,7 +32,7 @@ modstitch {
     metadata {
         modId = "sillyplugin"
         modName = "Figura Silly Plugin"
-        modVersion = "1.0.0"
+        modVersion = property("silly_version") as String?
         modGroup = "dev.celestial"
         modAuthor = "Niko Solstice"
         modDescription = "Spiritual successor of GoofyPlugin."
@@ -143,7 +143,7 @@ dependencies {
     }
 
 //    modstitchCompileOnly(figura("common-mojmap"))
-    modstitchCompileOnly("com.github.FiguraMC.luaj:luaj-core:$luaj_version-figura")
-    modstitchCompileOnly("com.github.FiguraMC.luaj:luaj-jse:$luaj_version-figura")
-    modstitchCompileOnly("com.neovisionaries:nv-websocket-client:$nv_websocket_version")
+    modstitchModImplementation("com.github.FiguraMC.luaj:luaj-core:$luaj_version-figura")
+    modstitchModImplementation("com.github.FiguraMC.luaj:luaj-jse:$luaj_version-figura")
+    modstitchModImplementation("com.neovisionaries:nv-websocket-client:$nv_websocket_version")
 }

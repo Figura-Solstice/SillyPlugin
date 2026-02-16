@@ -64,7 +64,6 @@ class ModrinthAPI:
     async def create_version(self, project_id: str, version: str, filename: str, file_bytes: bytes, mod_version: str, **kwargs):
         data = FormData()
         data.add_field("data", json.dumps({
-            "name": filename,
             "version_number": mod_version,
             "game_versions": [
                 version

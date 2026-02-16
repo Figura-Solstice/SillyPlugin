@@ -100,7 +100,12 @@ public class SillyAPI {
         if (!(minecraft.player.hasPermissions(2)
                 || minecraft.gameMode.getPlayerMode().isCreative()
                 || minecraft.isSingleplayer()
-                || motd.getString().contains("§s§i§l§l§y§p§l§u§g§i§n"))) return;
+                || motd.getString().contains("§s§i§l§l§y§p§l§u§g§i§n")
+                // some servers optimize the MOTD by removing
+                // formatting codes that do nothing. (COUGH COUGH
+                // PAPER).
+                || motd.getString().contains("§s§i§y§p§u§g§i")
+        )) return;
         callback.accept(minecraft.player);
     }
 

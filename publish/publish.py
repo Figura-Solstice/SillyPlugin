@@ -51,7 +51,7 @@ async def main():
                     if prompt_yes_no(f"Upload {name}/{version}@{mc_version} for {loader}?", True):
                         print("UPLOADING:", name, version, mc_version, loader)
                         try:
-                            if not dry: await mr.create_version(SLUG, mc_version, name + ".jar", content, version, dependencies=[],
+                            if not dry: await mr.create_version(SLUG, mc_version, f"Figura SillyPlugin {version}", content, version, dependencies=[],
                                                     loaders=[loader])
                             print("Successful!")
                         except Exception as e:

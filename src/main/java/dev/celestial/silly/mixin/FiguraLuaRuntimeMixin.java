@@ -35,7 +35,8 @@ public abstract class FiguraLuaRuntimeMixin {
             if (injectIntoError) {
                 injectIntoError = false;
                 Varargs res = owner.luaRuntime.run("ERROR", owner.tick, e.getMessage());
-                if (res != null && res.arg(1).isboolean() && res.arg(1).checkboolean()) {
+                if (res == null) return;
+                if (res.arg(1).isboolean() && res.arg(1).checkboolean()) {
                     injectIntoError = true;
                     ci.cancel();
                     return;

@@ -17,6 +17,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
 import net.minecraft.world.entity.player.Abilities;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.SkullBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -277,25 +278,16 @@ public class SillyAPI {
                     BlockState state = input.getState();
                     
                     if (state.hasBlockEntity()) {
-                        Matcher matcher = BLOCK_PATTERN.matcher(string);
-                        matcher.matches();
+                        // Create BlockEntity
 
-                        // Create BlockEntity of matching id
-
-                        BlockEntity entity = null;
-                        
-                        String id = matcher.group(1);
-                        switch (id) { // TODO populate with all BlockEntity classes or find a better method
-                            case "minecraft:player_head":
-                                entity = new SkullBlockEntity(pos.asBlockPos(), state);
-                                break;
-                            default:
-                                break;
-                        }
+                        BlockEntity entity = ((EntityBlock)state.getBlock()).newBlockEntity(pos.asBlockPos(), state);;
 
                         // Populate BlockEntity with nbt
                         
                         if (entity != null) {
+                            Matcher matcher = BLOCK_PATTERN.matcher(string);
+                            matcher.matches();
+                            
                             String nbt = matcher.group(3);
                             entity.load(TagParser.parseTag(nbt != null ? nbt : "{}"));
                         }

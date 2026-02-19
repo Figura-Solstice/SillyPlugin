@@ -47,6 +47,7 @@ import org.jetbrains.annotations.Nullable;
 import org.luaj.vm2.LuaError;
 import org.luaj.vm2.LuaTable;
 
+import com.llamalad7.mixinextras.lib.apache.commons.tuple.Pair;
 import com.mojang.brigadier.StringReader;
 
 import java.nio.file.Path;
@@ -218,7 +219,8 @@ public class SillyAPI {
             }
             if (minecraft.level != null && minecraft.level.isClientSide) {
                 ClientLevel lvl = minecraft.level;
-                SillyPlugin.FakeBlocks.get(avatar.owner).put(pos, state); // TODO give entity to FakeBlocks dict
+                Pair<BlockState, BlockEntity> block = Pair.of(state, entity);
+                SillyPlugin.FakeBlocks.get(avatar.owner).put(pos, block);
                 lvl.setBlock(pos, state, 2);
                 if (entity != null)
                     lvl.setBlockEntity(entity);
@@ -287,7 +289,7 @@ public class SillyAPI {
                         if (entity != null) {
                             Matcher matcher = BLOCK_PATTERN.matcher(string);
                             matcher.matches();
-                            
+
                             String nbt = matcher.group(3);
                             entity.load(TagParser.parseTag(nbt != null ? nbt : "{}"));
                         }

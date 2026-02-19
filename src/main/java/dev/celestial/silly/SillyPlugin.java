@@ -5,12 +5,15 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import org.figuramc.figura.avatar.AvatarManager;
 import org.figuramc.figura.permissions.PermissionManager;
 import org.figuramc.figura.permissions.Permissions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.llamalad7.mixinextras.lib.apache.commons.tuple.Pair;
 
 import java.util.Dictionary;
 import java.util.Hashtable;
@@ -23,7 +26,7 @@ public class SillyPlugin {
     public static Permissions BUMPSCOCITY = new Permissions("BUMPSCOCITY", 0, 1000, 0, 0, 0, 0, 0);
     public static Permissions FAKE_BLOCKS = new Permissions("FAKE_BLOCKS", 0, 0, 0, 0, 1);
 //    public static Permissions COLLIDERS = new Permissions("COLLIDERS", 0, 0, 0, 0, 1);
-    public static Dictionary<UUID, Dictionary<BlockPos, BlockState>> FakeBlocks = new Hashtable<>();
+    public static Dictionary<UUID, Dictionary<BlockPos, Pair<BlockState, BlockEntity>>> FakeBlocks = new Hashtable<>();
 
     public static boolean shouldHide(SillyEnums.GUI_ELEMENT el) {
         if (hostInstance == null) return false;

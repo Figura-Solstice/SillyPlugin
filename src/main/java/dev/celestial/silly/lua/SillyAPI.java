@@ -8,11 +8,20 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.commands.CommandBuildContext;
+import net.minecraft.commands.arguments.blocks.BlockInput;
+import net.minecraft.commands.arguments.blocks.BlockStateArgument;
 import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.TagParser;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
 import net.minecraft.world.entity.player.Abilities;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.EntityBlock;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.SkullBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+
 import org.apache.commons.lang3.ObjectUtils;
 import org.figuramc.figura.FiguraMod;
 import org.figuramc.figura.avatar.Avatar;
@@ -34,8 +43,12 @@ import org.figuramc.figura.math.vector.FiguraVec2;
 import org.figuramc.figura.math.vector.FiguraVec3;
 import org.figuramc.figura.permissions.PermissionManager;
 import org.figuramc.figura.utils.LuaUtils;
+import org.jetbrains.annotations.Nullable;
 import org.luaj.vm2.LuaError;
 import org.luaj.vm2.LuaTable;
+
+import com.llamalad7.mixinextras.lib.apache.commons.tuple.Pair;
+import com.mojang.brigadier.StringReader;
 
 import java.nio.file.Path;
 import java.util.HashSet;
@@ -43,6 +56,8 @@ import java.util.Hashtable;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @LuaWhitelist
 @LuaTypeDoc(name = "SillyAPI", value = "silly")
@@ -194,7 +209,7 @@ public class SillyAPI {
         });
     }
 
-    private void setBlockInternal(BlockPos pos, BlockState state) {
+    private void setBlockInternal(BlockPos pos, BlockState state, @Nullable BlockEntity entity) {
         cheatExecutor(plr -> {
             if (avatar.permissions.get(SillyPlugin.FAKE_BLOCKS) != 1) {
                 avatar.noPermissions.add(SillyPlugin.FAKE_BLOCKS);
@@ -204,11 +219,20 @@ public class SillyAPI {
             }
             if (minecraft.level != null && minecraft.level.isClientSide) {
                 ClientLevel lvl = minecraft.level;
-                SillyPlugin.FakeBlocks.get(avatar.owner).put(pos, state);
+                Pair<BlockState, BlockEntity> block = Pair.of(state, entity);
+                SillyPlugin.FakeBlocks.get(avatar.owner).put(pos, block);
                 lvl.setBlock(pos, state, 2);
+                if (entity != null)
+                    lvl.setBlockEntity(entity);
             }
         }, false);
     }
+
+    private void setBlockInternal(BlockPos pos, BlockState state) {
+        setBlockInternal(pos, state, null);
+    }
+
+    Pattern BLOCK_PATTERN = Pattern.compile("([^\\[\\{]+)([^\\{]*)(.*)");
 
     @LuaWhitelist
     @LuaMethodDoc(
@@ -228,21 +252,63 @@ public class SillyAPI {
                     )
             }
     )
-    public void setBlock(Object pos, Object block) {
-        if (pos instanceof BlockStateAPI state) {
-            BlockPos bpos = state.getPos().asBlockPos();
-            setBlockInternal(bpos, state.blockState);
-        } else if (pos instanceof FiguraVec3 posFV3) {
-            if (block instanceof BlockStateAPI state) {
-                setBlockInternal(posFV3.asBlockPos(), state.blockState);
-            } else if (block instanceof String stackString) {
-                BlockStateAPI bs = WorldAPI.newBlock(stackString, null, null, null);
-                setBlock(posFV3, bs);
-            } else if (block == null) {
-                SillyPlugin.FakeBlocks.get(avatar.owner).remove(pos);
+    public void setBlock(Object block_or_pos, Object block_or_string) {
+        if (block_or_pos instanceof BlockStateAPI state) {
+            // Found: BlockStateAPI, null
+
+            setBlockInternal(state.getPos().asBlockPos(), state.blockState);
+        } else if (block_or_pos instanceof FiguraVec3 pos) {
+            if (block_or_string instanceof BlockStateAPI state) {
+                // Found: Vector3, BlockStateAPI
+
+                setBlockInternal(pos.asBlockPos(), state.blockState);
+            } else if (block_or_string instanceof String string) {
+                // Found: Vector3, String
+
+                try {
+                    // We will parse the string manually since
+                    // Figura does not account for BlockEntity
+
+                    // Ideally, all this should be handled in
+                    // BlockEntityAPI to allow the Figura type
+                    // to contain BlockEntity NBT
+
+                    Level level = Minecraft.getInstance().level;
+                    BlockInput input = BlockStateArgument
+                            .block(CommandBuildContext.simple(level.registryAccess(), level.enabledFeatures()))
+                            .parse(new StringReader(string));
+                    BlockState state = input.getState();
+                    
+                    if (state.hasBlockEntity()) {
+                        // Create BlockEntity
+
+                        BlockEntity entity = ((EntityBlock)state.getBlock()).newBlockEntity(pos.asBlockPos(), state);;
+
+                        // Populate BlockEntity with nbt
+                        
+                        if (entity != null) {
+                            Matcher matcher = BLOCK_PATTERN.matcher(string);
+                            matcher.matches();
+
+                            String nbt = matcher.group(3);
+                            entity.load(TagParser.parseTag(nbt != null ? nbt : "{}"));
+                        }
+
+                        setBlockInternal(pos.asBlockPos(), state, entity);
+                    } else {
+                        setBlockInternal(pos.asBlockPos(), state);
+                    }
+                } catch (Exception e) {
+                    throw new LuaError("Could not parse block state from string: " + string);
+                }
+            } else {
+                throw new LuaError("Illegal argument at 3 to setBlock(): " + block_or_string.getClass().getSimpleName());
             }
+        } else {
+            throw new LuaError("Illegal argument at 2 to setBlock(): " + block_or_pos.getClass().getSimpleName());
         }
     }
+    
 
 
     @LuaWhitelist

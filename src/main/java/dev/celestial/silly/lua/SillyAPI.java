@@ -232,7 +232,7 @@ public class SillyAPI {
         setBlockInternal(pos, state, null);
     }
 
-    Pattern BLOCK_PATTERN = Pattern.compile("([^\\[]+)(\\[[^\\[]+\\])(.*)");
+    Pattern BLOCK_PATTERN = Pattern.compile("([^\\[\\{]+)([^\\{]*)(.*)");
 
     @LuaWhitelist
     @LuaMethodDoc(

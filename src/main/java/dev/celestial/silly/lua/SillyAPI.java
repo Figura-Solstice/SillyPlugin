@@ -12,19 +12,25 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
 import net.minecraft.world.entity.player.Abilities;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.figuramc.figura.FiguraMod;
 import org.figuramc.figura.avatar.Avatar;
 import org.figuramc.figura.avatar.AvatarManager;
 import org.figuramc.figura.avatar.local.LocalAvatarFetcher;
 import org.figuramc.figura.avatar.local.LocalAvatarLoader;
 import org.figuramc.figura.backend2.NetworkStuff;
+import org.figuramc.figura.config.Configs;
 import org.figuramc.figura.gui.widgets.lists.AvatarList;
 import org.figuramc.figura.lua.FiguraLuaPrinter;
 import org.figuramc.figura.lua.FiguraLuaRuntime;
 import org.figuramc.figura.lua.LuaNotNil;
 import org.figuramc.figura.lua.LuaWhitelist;
+import org.figuramc.figura.lua.api.ping.PingArg;
+import org.figuramc.figura.lua.api.ping.PingFunction;
 import org.figuramc.figura.lua.api.world.BlockStateAPI;
 import org.figuramc.figura.lua.api.world.WorldAPI;
 import org.figuramc.figura.lua.docs.LuaMethodDoc;
@@ -34,13 +40,11 @@ import org.figuramc.figura.math.vector.FiguraVec2;
 import org.figuramc.figura.math.vector.FiguraVec3;
 import org.figuramc.figura.permissions.PermissionManager;
 import org.figuramc.figura.utils.LuaUtils;
-import org.luaj.vm2.LuaError;
-import org.luaj.vm2.LuaTable;
+import org.luaj.vm2.*;
+import org.luaj.vm2.lib.VarArgFunction;
 
 import java.nio.file.Path;
-import java.util.HashSet;
-import java.util.Hashtable;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
@@ -48,18 +52,17 @@ import java.util.function.Consumer;
 @LuaTypeDoc(name = "SillyAPI", value = "silly")
 public class SillyAPI {
     public final Avatar avatar;
-    public final FiguraLuaRuntime runtime;
     public final Minecraft minecraft;
     public boolean mayFlyOverride = false;
     public boolean mayFly = false;
     public boolean noclip = false;
     public boolean local;
     public Set<SillyEnums.GUI_ELEMENT> disabledElements = new HashSet<>();
+    public boolean fakeBlocksDisabled = false;
 
     public SillyAPI(Avatar avatar) {
         SillyPlugin.FakeBlocks.put(avatar.owner, new Hashtable<>());
         this.avatar = avatar;
-        this.runtime = avatar.luaRuntime;
         this.minecraft = Minecraft.getInstance();
         local = avatar.isHost;
         if (local) SillyPlugin.hostInstance = this;
@@ -70,7 +73,19 @@ public class SillyAPI {
     }
 
     public void cleanup() {
+        SillyPlugin.LOGGER.info("SillyAPI.cleanup() for {}", avatar.owner);
+        ClientLevel level = minecraft.level;
+        var fakes = SillyPlugin.FakeBlocks.get(avatar.owner);
         SillyPlugin.FakeBlocks.remove(avatar.owner);
+        if (fakes != null)
+            fakes.keySet().forEach(x -> {
+                if (!SillyPlugin.fakeExistsAt(x) && level != null) {
+                    var real = SillyPlugin.RealBlocks.get(x);
+                    level.setBlock(x, real.getLeft(), 2);
+                    if (real.getRight() != null)
+                        level.setBlockEntity(real.getRight());
+                }
+            });
 
         if (!local) return; // START host cleanup
         cheatExecutor(plr -> SillyUtil.antiGhost());
@@ -178,6 +193,12 @@ public class SillyAPI {
         return setHudElementVisible(element, state);
     }
 
+    // cosmic your oopsie is now canon
+    @LuaWhitelist
+    public SillyAPI setHudElementDisabled(@LuaNotNil String element, Boolean state) {
+        return setHudElementVisible(element, !state);
+    }
+
     @LuaWhitelist
     @LuaMethodDoc(
             value = "silly.set_noclip",
@@ -204,8 +225,18 @@ public class SillyAPI {
             }
             if (minecraft.level != null && minecraft.level.isClientSide) {
                 ClientLevel lvl = minecraft.level;
-                SillyPlugin.FakeBlocks.get(avatar.owner).put(pos, state);
-                lvl.setBlock(pos, state, 2);
+                BlockState realBlock = lvl.getBlockState(pos);
+                BlockEntity realEntity;
+                if (realBlock.hasBlockEntity())
+                    realEntity = lvl.getBlockEntity(pos);
+                else {
+                    realEntity = null;
+                }
+                SillyPlugin.RealBlocks.computeIfAbsent(pos, k -> new ImmutablePair<>(realBlock, realEntity));
+                SillyPlugin.FakeBlocks.computeIfAbsent(avatar.owner, k -> new HashMap<>())
+                        .put(pos, state);
+                if (!SillyPlugin.hostInstance.fakeBlocksDisabled)
+                    lvl.setBlock(pos, state, 2);
             }
         }, false);
     }
@@ -239,9 +270,118 @@ public class SillyAPI {
                 BlockStateAPI bs = WorldAPI.newBlock(stackString, null, null, null);
                 setBlock(posFV3, bs);
             } else if (block == null) {
-                SillyPlugin.FakeBlocks.get(avatar.owner).remove(pos);
+                BlockPos bp = posFV3.asBlockPos();
+                SillyPlugin.FakeBlocks.get(avatar.owner).remove(bp);
+                Pair<BlockState, BlockEntity> real = SillyPlugin.RealBlocks.get(bp);
+                ClientLevel lvl = minecraft.level;
+                if (real != null && !SillyPlugin.fakeExistsAt(bp) && lvl != null) {
+                    lvl.setBlock(bp, real.getLeft(), 2);
+                    if (real.getRight() != null)
+                        lvl.setBlockEntity(real.getRight());
+                }
             }
         }
+    }
+
+    @LuaWhitelist
+    @LuaMethodDoc(
+            value = "silly.set_fake_blocks_enabled",
+            overloads = {
+                    @LuaMethodOverload(
+                            argumentTypes = { Boolean.class },
+                            argumentNames = { "state" }
+                    )
+            }
+    )
+    public SillyAPI setFakeBlocksEnabled(Boolean state) {
+        state = state != null && state;
+        state = !state;
+        this.fakeBlocksDisabled = state;
+        ClientLevel lvl = minecraft.level;
+        if (lvl == null) return this;
+        if (state) {
+            SillyPlugin.RealBlocks.forEach((pos, dt) -> {
+                lvl.setBlock(pos, dt.getLeft(), 2);
+                BlockEntity ent = dt.getRight();
+                if (ent != null) lvl.setBlockEntity(ent);
+            });
+        } else {
+            SillyPlugin.flattenedFakes().forEach((pos, bstate) -> {
+                lvl.setBlock(pos, bstate, 2);
+            });
+        }
+        return this;
+    }
+
+
+//    @LuaWhitelist
+//    public Object __index(String args) {
+//        if (Objects.equals(args, "ping")) {
+//            return ping;
+//        }
+//        return null;
+//    }
+
+//    @LuaWhitelist
+//    public VarArgFunction ping = new VarArgFunction() {
+//        @Override
+//        public Varargs invoke(Varargs args) {
+//            // arg 1 is silly
+//            // arg 2 is PingFunction
+//            // the rest are ping args
+//            LuaValue pingFunc = args.arg(2);
+//            return super.invoke(args);
+//        }
+//    }
+
+    @LuaWhitelist
+    public SillyAPI ping(String pingFunc, Object... args) {
+        if (!local) return this;
+        PingFunction pong = avatar.luaRuntime.ping.get(pingFunc);
+        if (pong == null) throw new LuaError("Ping " + pingFunc + " not found!");
+        List<LuaValue> lvlist = new ArrayList<>();
+        Arrays.stream(args).forEach(v -> lvlist.add((LuaValue) avatar.luaRuntime.typeManager.javaToLua(v)));
+        LuaValue[] largs = lvlist.toArray(new LuaValue[0]);
+        Varargs vargs = LuaValue.varargsOf(largs);
+
+        boolean sync = Configs.SYNC_PINGS.value;
+        byte[] data = new PingArg(vargs).toByteArray();
+        int id = (pingFunc.hashCode() + 1) * 31;
+        boolean isLocal = AvatarManager.localUploaded;
+        AvatarManager.localUploaded = true;
+        NetworkStuff.sendPing(id, sync, data);
+        AvatarManager.localUploaded = isLocal;
+        if (!sync) avatar.runPing(id, data);
+        return this;
+    }
+
+    @LuaWhitelist
+    @LuaMethodDoc(
+            value = "silly.get_fake_block_info",
+            overloads = {
+                    @LuaMethodOverload(
+                            argumentNames = {"pos"},
+                            argumentTypes = {FiguraVec3.class}
+                    ),
+                    @LuaMethodOverload(
+                            argumentNames = {"x", "y", "z"},
+                            argumentTypes = {Double.class, Double.class, Double.class}
+                    )
+            }
+    )
+    public LuaTable getFakeBlockInfo(Object x, Double y, Double z) {
+        BlockPos pos = LuaUtils.parseVec3("getFakeBlockInfo", x, y, z).asBlockPos();
+        LuaTable ret = LuaValue.tableOf();
+        int i = 1;
+        for (Map.Entry<UUID, Map<BlockPos, BlockState>> entry : SillyPlugin.FakeBlocks.entrySet()) {
+            UUID uuid = entry.getKey();
+            Map<BlockPos, BlockState> data = entry.getValue();
+            if (data.get(pos) != null) {
+                ret.set(i, uuid.toString());
+                i++;
+            }
+        }
+        return ret;
     }
 
 
@@ -370,9 +510,9 @@ public class SillyAPI {
         String name = other.entityName;
         if (name.isBlank()) name = other.name;
         if (name.isBlank()) name = other.id;
-        table.set("CHAT", ObjectUtils.firstNonNull(avatar.luaRuntime.nameplate.CHAT.getText(), name));
-        table.set("ENTITY", ObjectUtils.firstNonNull(avatar.luaRuntime.nameplate.ENTITY.getText(), name));
-        table.set("LIST", ObjectUtils.firstNonNull(avatar.luaRuntime.nameplate.LIST.getText(), name));
+        table.set("CHAT", ObjectUtils.firstNonNull(other.luaRuntime.nameplate.CHAT.getText(), name));
+        table.set("ENTITY", ObjectUtils.firstNonNull(other.luaRuntime.nameplate.ENTITY.getText(), name));
+        table.set("LIST", ObjectUtils.firstNonNull(other.luaRuntime.nameplate.LIST.getText(), name));
 
         return table;
     }

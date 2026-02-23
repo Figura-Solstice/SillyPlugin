@@ -15,6 +15,8 @@
     "figura.docs.silly.get_bumpscocity": "Gets the current bumpscocity.",
     "figura.docs.silly.what_does_bumpscocity_do": "Tells you what bumpscocity does.",
     "figura.docs.silly.set_block": "Sets a fake block in the world.\nSetting a block to nil removes the fake one.\nRequires cheats (but runs on clients!)",
+    "figura.docs.silly.set_fake_blocks_enabled": "Sets whether or not fake blocks are enabled locally.\nDefaults to true.",
+    "figura.docs.silly.get_fake_block_info": "Gets info about who placed a fake block at a position.",
     "figura.docs.silly.set_hud_element_visible": "Sets the visibility of a hud element.",
     "sillyplugin.permissions.value.bumpscocity": "Bumpscocity",
     "sillyplugin.permissions.value.bumpscocity.tooltip": "silly:whatDoesBumpscocityDo()",

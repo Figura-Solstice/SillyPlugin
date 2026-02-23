@@ -10,6 +10,7 @@
     "ClientPacketListenerMixin",
     "LocalPlayerMixin",
     "MinecraftAccessor",
+    "MinecraftClientMixin",
     "hud.BossHealthOverlayMixin",
     "hud.ChatComponentMixin",
     "hud.GuiMixin",

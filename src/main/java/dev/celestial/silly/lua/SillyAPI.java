@@ -14,6 +14,7 @@ import net.minecraft.network.chat.Style;
 import net.minecraft.world.entity.player.Abilities;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.Vec3;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -436,7 +437,9 @@ public class SillyAPI {
             }
     )
     public void setPos(@LuaNotNil Object x, Float y, Float z) {
-        FiguraVec3 pos = LuaUtils.parseVec3("setPos", x, y, z);
+        assert minecraft.player != null;
+        Vec3 cur = minecraft.player.position();
+        FiguraVec3 pos = LuaUtils.parseVec3("setPos", x, y, z, cur.x, cur.y, cur.z);
         if (isVectorOkay(pos))
             cheatExecutor(plr -> plr.setPos(pos.asVec3()));
     }
@@ -456,7 +459,9 @@ public class SillyAPI {
             }
     )
     public void setVelocity(@LuaNotNil Object x, Float y, Float z) {
-        FiguraVec3 vel = LuaUtils.parseVec3("setVelocity", x, y, z);
+        assert minecraft.player != null;
+        Vec3 current = minecraft.player.getDeltaMovement();
+        FiguraVec3 vel = LuaUtils.parseVec3("setVelocity", x, y, z, current.x, current.y, current.z);
         if (isVectorOkay(vel))
             cheatExecutor(plr -> plr.setDeltaMovement(vel.asVec3()));
     }
@@ -476,7 +481,10 @@ public class SillyAPI {
             }
     )
     public void setRot(@LuaNotNil Object x, Float y) {
-        FiguraVec2 rot = LuaUtils.parseVec2("setRot", x, y);
+        assert minecraft.player != null;
+        float cur_x = minecraft.player.getXRot();
+        float cur_y = minecraft.player.getYRot();
+        FiguraVec2 rot = LuaUtils.parseVec2("setRot", x, y, cur_x, cur_y);
         if (!Double.isNaN(rot.x) && !Double.isNaN(rot.y))
             cheatExecutor(plr -> {
                 plr.setXRot((float)rot.x);

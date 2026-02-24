@@ -468,7 +468,8 @@ public class SillyAPI {
                             argumentTypes = { Float.class, Float.class, Float.class },
                             argumentNames = {"x","y","z"}
                     )
-            }
+            },
+            aliases = {"setVel"}
     )
     public void setVelocity(@LuaNotNil Object x, Float y, Float z) {
         assert minecraft.player != null;
@@ -476,6 +477,11 @@ public class SillyAPI {
         FiguraVec3 vel = LuaUtils.parseVec3("setVelocity", x, y, z, current.x, current.y, current.z);
         if (isVectorOkay(vel))
             cheatExecutor(plr -> plr.setDeltaMovement(vel.asVec3()));
+    }
+
+    @LuaWhitelist
+    public void setVel(@LuaNotNil Object x, Float y, Float z) {
+        setVelocity(x,y,z);
     }
 
     @LuaWhitelist

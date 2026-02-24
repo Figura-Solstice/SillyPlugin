@@ -52,25 +52,4 @@ public class SillyUtil {
 
         return AvatarManager.getAvatarForPlayer(uuid);
     }
-
-    // Code derived from
-    // https://github.com/gbl/AntiGhost
-    public static void antiGhost() {
-        Minecraft mc = Minecraft.getInstance();
-        ClientPacketListener conn = mc.getConnection();
-        if (conn == null)
-            return;
-        assert mc.player != null;
-        BlockPos pos = mc.player.blockPosition();
-        for (int dx = -4; dx <= 4; dx++)
-            for (int dy = -4; dy <= 4; dy++)
-                for (int dz = -4; dz <= 4; dz++) {
-                    ServerboundPlayerActionPacket packet = new ServerboundPlayerActionPacket(
-                            ServerboundPlayerActionPacket.Action.ABORT_DESTROY_BLOCK,
-                            new BlockPos(pos.getX() + dx, pos.getY() + dy, pos.getZ() + dz),
-                            Direction.UP // with ABORT_DESTROY_BLOCK, this value is unused
-                    );
-                    conn.send(packet);
-                }
-    }
 }

@@ -89,7 +89,6 @@ public class SillyAPI {
             });
 
         if (!local) return; // START host cleanup
-        cheatExecutor(plr -> SillyUtil.antiGhost());
         if (minecraft.player != null) {
             Abilities a = minecraft.player.getAbilities();
             if (a.flying && !a.mayfly && this.mayFly && this.mayFlyOverride) {

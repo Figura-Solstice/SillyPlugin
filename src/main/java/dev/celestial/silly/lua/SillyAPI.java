@@ -292,7 +292,8 @@ public class SillyAPI {
                             argumentTypes = { Boolean.class },
                             argumentNames = { "state" }
                     )
-            }
+            },
+            aliases = {"setBlocksEnabled"}
     )
     public SillyAPI setFakeBlocksEnabled(Boolean state) {
         state = state != null && state;
@@ -312,6 +313,11 @@ public class SillyAPI {
             });
         }
         return this;
+    }
+
+    @LuaWhitelist
+    public SillyAPI setBlocksEnabled(Boolean state) {
+        return setFakeBlocksEnabled(state);
     }
 
 
@@ -368,7 +374,8 @@ public class SillyAPI {
                             argumentNames = {"x", "y", "z"},
                             argumentTypes = {Double.class, Double.class, Double.class}
                     )
-            }
+            },
+            aliases = {"getBlockInfo"}
     )
     public LuaTable getFakeBlockInfo(Object x, Double y, Double z) {
         BlockPos pos = LuaUtils.parseVec3("getFakeBlockInfo", x, y, z).asBlockPos();
@@ -383,6 +390,11 @@ public class SillyAPI {
             }
         }
         return ret;
+    }
+
+    @LuaWhitelist
+    public LuaTable getBlockInfo(Object x, Double y, Double z) {
+        return getFakeBlockInfo(x,y,z);
     }
 
 

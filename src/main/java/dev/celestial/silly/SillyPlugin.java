@@ -11,6 +11,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.figuramc.figura.avatar.AvatarManager;
 import org.figuramc.figura.permissions.PermissionManager;
 import org.figuramc.figura.permissions.Permissions;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,6 +20,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class SillyPlugin {
     public static Logger LOGGER = LoggerFactory.getLogger("SillyPlugin");
+    @Nullable
     public static SillyAPI hostInstance;
     public static Permissions BUMPSCOCITY = new Permissions("BUMPSCOCITY", 0, 1000, 0, 0, 0, 0, 0);
     public static Permissions FAKE_BLOCKS = new Permissions("FAKE_BLOCKS", 0, 0, 0, 0, 1);

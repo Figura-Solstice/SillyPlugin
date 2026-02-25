@@ -10,7 +10,6 @@ import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.Style;
 import net.minecraft.world.entity.player.Abilities;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -22,11 +21,9 @@ import org.figuramc.figura.FiguraMod;
 import org.figuramc.figura.avatar.Avatar;
 import org.figuramc.figura.avatar.AvatarManager;
 import org.figuramc.figura.avatar.local.LocalAvatarFetcher;
-import org.figuramc.figura.avatar.local.LocalAvatarLoader;
 import org.figuramc.figura.backend2.NetworkStuff;
 import org.figuramc.figura.config.Configs;
 import org.figuramc.figura.gui.widgets.lists.AvatarList;
-import org.figuramc.figura.lua.FiguraLuaPrinter;
 import org.figuramc.figura.lua.FiguraLuaRuntime;
 import org.figuramc.figura.lua.LuaNotNil;
 import org.figuramc.figura.lua.LuaWhitelist;
@@ -39,10 +36,8 @@ import org.figuramc.figura.lua.docs.LuaMethodOverload;
 import org.figuramc.figura.lua.docs.LuaTypeDoc;
 import org.figuramc.figura.math.vector.FiguraVec2;
 import org.figuramc.figura.math.vector.FiguraVec3;
-import org.figuramc.figura.permissions.PermissionManager;
 import org.figuramc.figura.utils.LuaUtils;
 import org.luaj.vm2.*;
-import org.luaj.vm2.lib.VarArgFunction;
 
 import java.nio.file.Path;
 import java.util.*;
@@ -235,7 +230,7 @@ public class SillyAPI {
                 SillyPlugin.RealBlocks.computeIfAbsent(pos, k -> new ImmutablePair<>(realBlock, realEntity));
                 SillyPlugin.FakeBlocks.computeIfAbsent(avatar.owner, k -> new HashMap<>())
                         .put(pos, state);
-                if (!SillyPlugin.hostInstance.fakeBlocksDisabled)
+                if (!(SillyPlugin.hostInstance != null && SillyPlugin.hostInstance.fakeBlocksDisabled))
                     lvl.setBlock(pos, state, 2);
             }
         }, false);
@@ -577,21 +572,6 @@ public class SillyAPI {
         AvatarManager.loadLocalAvatar(avatarPath);
         AvatarList.selectedEntry = avatarPath;
     }
-
-    // supposedly this function was problematic as a command.
-    /*
-    @LuaWhitelist
-    @LuaMethodDoc(value = "silly.upload_avatar")
-    public void uploadAvatar() {
-        if (!FiguraMod.isLocal(avatar.owner)) return;
-        try {
-            // figura i hate your code :skull:
-            LocalAvatarLoader.loadAvatar(null, null);
-        } catch (Exception ignored) {}
-        NetworkStuff.uploadAvatar(avatar);
-        AvatarList.selectedEntry = null;
-    }
-    */
 
     @Override
     public String toString() {

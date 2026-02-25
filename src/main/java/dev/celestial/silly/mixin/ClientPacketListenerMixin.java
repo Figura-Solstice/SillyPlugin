@@ -40,7 +40,7 @@ public class ClientPacketListenerMixin {
             }
             Pair<BlockState, BlockEntity> realData = new ImmutablePair<>(state, entity);
             Minecraft.getInstance().execute(() -> SillyPlugin.RealBlocks.put(updated, realData));
-            if (!AvatarManager.panic && !SillyPlugin.hostInstance.fakeBlocksDisabled) {
+            if (!AvatarManager.panic && !(SillyPlugin.hostInstance != null && SillyPlugin.hostInstance.fakeBlocksDisabled)) {
                 ci.cancel();
                 return;
             }

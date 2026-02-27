@@ -23,7 +23,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(Gui.class)
 public class GuiMixin {
     @Unique
-    private void silly$cancelIfHidden(SillyEnums.GUI_ELEMENT el, CallbackInfo ci) {
+    private static void silly$cancelIfHidden(SillyEnums.GUI_ELEMENT el, CallbackInfo ci) {
         if (SillyPlugin.shouldHide(el)) ci.cancel();
     }
 
@@ -59,6 +59,22 @@ public class GuiMixin {
     public void renderPlayerHealthMixin(GuiGraphics guiGraphics, Player player, int i, int j, int k, int l, float f, int m, int n, int o, boolean bl, CallbackInfo ci) {
         silly$cancelIfHidden(SillyEnums.GUI_ELEMENT.PLAYER_HEALTH, ci);
     }
+    //? if neoforge && >=1.21 {
+    /*@Inject(method = "renderArmor", at = @At("HEAD"), cancellable = true)
+    private static void renderArmorMixin(GuiGraphics p_335393_, Player p_335672_, int p_335452_, int p_335846_, int p_335778_, int p_335859_, CallbackInfo ci) {
+        silly$cancelIfHidden(SillyEnums.GUI_ELEMENT.ARMOR_BAR, ci);
+    }
+    *///?} else if >=1.21 {
+    /*@Inject(method = "renderArmor", at = @At("HEAD"), cancellable = true)
+    private static void renderArmorMixin(GuiGraphics p_335393_, Player p_335672_, int p_335452_, int p_335846_, int p_335778_, int p_335859_, CallbackInfo ci) {
+        silly$cancelIfHidden(SillyEnums.GUI_ELEMENT.ARMOR_BAR, ci);
+    }
+    *///?} else {
+    @WrapOperation(method = "renderPlayerHealth", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/player/Player;getArmorValue()I"))
+    public int renderArmorMixin(Player instance, Operation<Integer> original) {
+        return SillyPlugin.shouldHide(SillyEnums.GUI_ELEMENT.ARMOR_BAR) ? 0 : original.call(instance);
+    }
+     //?}
 
     //? if neoforge && >=1.21 {
     /*@WrapOperation(method = "renderFoodLevel", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/Gui;getVehicleMaxHearts(Lnet/minecraft/world/entity/LivingEntity;)I"))

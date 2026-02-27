@@ -17,6 +17,7 @@ public class SillyEnums {
         CHAT,
         BOSS_HEALTH_OVERLAY,
         PLAYER_TAB_OVERLAY,
-        SUBTITLE_OVERLAY
+        SUBTITLE_OVERLAY,
+        ARMOR_BAR
     }
 }

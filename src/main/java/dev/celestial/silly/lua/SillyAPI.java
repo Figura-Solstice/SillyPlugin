@@ -266,7 +266,8 @@ public class SillyAPI {
                 setBlock(posFV3, bs);
             } else if (block == null) {
                 BlockPos bp = posFV3.asBlockPos();
-                SillyPlugin.FakeBlocks.get(avatar.owner).remove(bp);
+                // its silly but it works
+                SillyPlugin.FakeBlocks.getOrDefault(avatar.owner, new HashMap<>()).remove(bp);
                 Pair<BlockState, BlockEntity> real = SillyPlugin.RealBlocks.get(bp);
                 ClientLevel lvl = minecraft.level;
                 if (real != null && !SillyPlugin.fakeExistsAt(bp) && lvl != null) {

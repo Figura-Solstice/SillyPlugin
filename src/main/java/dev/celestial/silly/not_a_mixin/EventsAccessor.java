@@ -5,3 +5,4 @@ import org.figuramc.figura.lua.api.event.LuaEvent;
 public interface EventsAccessor {
     LuaEvent silly$getErrorEvent();
 }
+

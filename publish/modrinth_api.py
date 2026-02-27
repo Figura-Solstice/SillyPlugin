@@ -41,7 +41,21 @@ class ModrinthAPI:
     async def hello(self):
         async with self.client.get("/") as sess:
             await self.__expect_ok(sess)
-            res = await sess.json()
+            try:
+                res = await sess.json()
+            except:
+                print("WARNING: Modrinth API is fucked (`hello` endpoint returned non-json!")
+                res = {
+                "about": "Welcome traveler!",
+                "documentation": "https://docs.modrinth.com",
+                "name": "fucked up evil error",
+                "version": "2.7.0",
+                "build_info": {
+                    "comp_date": "0",
+                    "git_hash": "0",
+                    "profile": "evil"
+                }
+            }
             sess.close()
             return ModrinthHello(res)
 

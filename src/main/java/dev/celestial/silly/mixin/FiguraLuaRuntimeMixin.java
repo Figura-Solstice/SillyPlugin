@@ -30,6 +30,7 @@ public abstract class FiguraLuaRuntimeMixin {
 
     @Inject(method="error", at = @At("HEAD"), cancellable = true)
     public void errorMixin(Throwable e, CallbackInfo ci) {
+        if (owner.luaRuntime == null) return;
         LuaEvent ev = ((EventsAccessor)owner.luaRuntime.events).silly$getErrorEvent();
         if (ev.__len() > 0) {
             if (injectIntoError) {

@@ -45,6 +45,13 @@ public class GuiMixin {
         silly$cancelIfHidden(SillyEnums.GUI_ELEMENT.EXPERIENCE_BAR, ci);
     }
 
+    //? if >=1.21 {
+    /*@Inject(method = "renderExperienceLevel", at = @At("HEAD"), cancellable = true)
+    public void renderExperienceLevelMixin(GuiGraphics guiGraphics, DeltaTracker deltaTracker, CallbackInfo ci) {
+        silly$cancelIfHidden(SillyEnums.GUI_ELEMENT.EXPERIENCE_BAR, ci);
+    }
+    *///?}
+
     @Inject(method = "renderJumpMeter", at = @At("HEAD"), cancellable = true)
     public void renderJumpMeterMixin(PlayerRideableJumping playerRideableJumping, GuiGraphics guiGraphics, int i, CallbackInfo ci) {
         silly$cancelIfHidden(SillyEnums.GUI_ELEMENT.JUMP_METER, ci);

@@ -23,7 +23,7 @@ public class SillyPlugin {
     @Nullable
     public static SillyAPI hostInstance;
     public static Permissions BUMPSCOCITY = new Permissions("BUMPSCOCITY", 0, 1000, 0, 0, 0, 0, 0);
-    public static Permissions FAKE_BLOCKS = new Permissions("FAKE_BLOCKS", 0, 0, 0, 0, 1);
+    public static Permissions FAKE_BLOCKS = new Permissions("FAKE_BLOCKS", 0, 0, 0, 0, 0);
 //    public static Permissions COLLIDERS = new Permissions("COLLIDERS", 0, 0, 0, 0, 1);
     public static Map<UUID, Map<BlockPos, BlockState>> FakeBlocks = new HashMap<>();
     public static Map<BlockPos, Pair<BlockState, BlockEntity>> RealBlocks = new HashMap<>();

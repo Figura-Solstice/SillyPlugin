@@ -1,5 +1,7 @@
 package dev.celestial.silly.lua;
 
+import com.llamalad7.mixinextras.lib.apache.commons.tuple.Pair;
+import dev.celestial.silly.SillyPlugin;
 import dev.celestial.silly.mixin.RuntimeAccessor;
 import net.minecraft.nbt.ByteArrayTag;
 import org.figuramc.figura.avatar.Avatar;
@@ -22,12 +24,35 @@ public class BackportsAPI {
         this.runtime = runtime;
         this.owner = runtime.owner;
     }
-    public static Deque<UUID> callerStack = new ArrayDeque<>();
+    public static Deque<Pair<UUID, String>> callerStack = new ArrayDeque<>();
+
+    public static CallerContext openCallerContext(UUID uuid, String context) {
+        return CallerContext.Open(uuid, context);
+    }
+
+    public static void pushStack(UUID uuid, String context) {
+//        SillyPlugin.LOGGER.info("PUSH {}", formatStackPair(Pair.of(uuid, context)));
+        callerStack.push(Pair.of(uuid, context));
+    }
+
+    public static void popStack(UUID expectedUUID, String expectedContext) {
+//        SillyPlugin.LOGGER.info("POP {}", formatStackPair(Pair.of(expectedUUID, expectedContext)));
+        Pair<UUID, String> item = callerStack.pop();
+        UUID uuid = item.getLeft();
+        Pair<UUID, String> expected = Pair.of(expectedUUID, expectedContext);
+        if (uuid != expectedUUID || !Objects.equals(expectedContext, item.getRight()))
+            throw new IllegalStateException("Caller stack exploded (expected " + formatStackPair(expected)
+                    + ", got " + formatStackPair(item));
+    }
+
+    private static String formatStackPair(Pair<UUID, String> pair) {
+        return "(" + pair.getLeft().toString() + ", " + pair.getRight() + ")";
+    }
 
     @LuaWhitelist
     public String getCaller() {
-        UUID caller = callerStack.peek();
-        if (caller != null) return caller.toString();
+        Pair<UUID, String> caller = callerStack.peek();
+        if (caller != null) return caller.getLeft().toString();
         return null;
     }
 
@@ -51,8 +76,8 @@ public class BackportsAPI {
         Map<String, Varargs> loadedScripts = runtimeAccessor.getLoadedScripts();
         if (runtime) loadedScripts.remove(scriptName);
         if (contents == null) {
-            if (!nbt) owner.nbt.getCompound("scripts").remove(scriptNameNbt);
-            if (!runtime) scripts.remove(scriptName);
+            if (nbt) owner.nbt.getCompound("scripts").remove(scriptNameNbt);
+            if (runtime) scripts.remove(scriptName);
             return;
         }
         if (runtime) scripts.put(scriptName, contents);
@@ -61,6 +86,7 @@ public class BackportsAPI {
 
     @LuaWhitelist
     public LuaTable getScripts(String path) {
+        if (path == null) path = "";
         // iterate over all script names and add them if their name starts with the path query
         Map<String, String> scripts = ((RuntimeAccessor)runtime).getScripts();
         LuaTable table = new LuaTable();
@@ -80,6 +106,7 @@ public class BackportsAPI {
 
     @LuaWhitelist
     public String getScript(String scriptPath) {
+        if (scriptPath == null) scriptPath = "";
         RuntimeAccessor runtimeAccessor = ((RuntimeAccessor)this.runtime);
         Map<String, String> scripts = runtimeAccessor.getScripts();
         LuaFunction getInfoFunction = runtimeAccessor.getGetInfoFunction();
@@ -87,3 +114,4 @@ public class BackportsAPI {
         return scripts.get(PathUtils.computeSafeString(PathUtils.isAbsolute(path) ? path : PathUtils.getWorkingDirectory(getInfoFunction).resolve(path)));
     }
 }
+

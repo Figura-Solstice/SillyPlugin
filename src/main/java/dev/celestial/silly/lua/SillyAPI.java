@@ -42,6 +42,7 @@ import org.figuramc.figura.math.vector.FiguraVec2;
 import org.figuramc.figura.math.vector.FiguraVec3;
 import org.figuramc.figura.utils.EntityUtils;
 import org.figuramc.figura.utils.LuaUtils;
+import org.figuramc.figura.utils.TextUtils;
 import org.luaj.vm2.*;
 
 import java.lang.reflect.Array;
@@ -366,6 +367,18 @@ public class SillyAPI {
                 }
             }
         }
+    }
+
+    @LuaWhitelist
+    public void disconnect(String msg) {
+        msg = msg != null ? msg : "Disconnected";
+        Component comp = Component.literal(msg);
+        cheatExecutor(plr -> {
+            var conn = minecraft.getConnection();
+            if (conn != null) {
+                conn.getConnection().disconnect(comp);
+            }
+        });
     }
 
     @LuaWhitelist

@@ -1,9 +1,12 @@
 package dev.celestial.silly.mixin;
 
+import com.llamalad7.mixinextras.lib.apache.commons.tuple.Pair;
 import com.llamalad7.mixinextras.sugar.Local;
 import dev.celestial.silly.lua.BackportsAPI;
+import dev.celestial.silly.lua.CallerContext;
 import org.figuramc.figura.lua.api.entity.EntityAPI;
 import org.jetbrains.annotations.NotNull;
+import org.luaj.vm2.LuaFunction;
 import org.luaj.vm2.LuaTable;
 import org.luaj.vm2.LuaValue;
 import org.luaj.vm2.Varargs;
@@ -27,8 +30,13 @@ public class EntityAPIMixin {
 
     @Inject(method = "getVariable", at = @At(value = "RETURN"), cancellable = true)
     public void getVariableMixin(String key, CallbackInfoReturnable<LuaValue> cir) {
-        LuaTable table = cir.getReturnValue().checktable();
-        cir.setReturnValue(silly$transformTable(table, this.entityUUID));
+        LuaValue value = cir.getReturnValue();
+        Pair<UUID, String> caller = BackportsAPI.callerStack.peek();
+        if (caller == null) throw new IllegalStateException("Caller stack peek gave null (?!?!?!?)");
+        if (value.istable())
+            cir.setReturnValue(silly$transformTable(value.checktable(), caller.getLeft()));
+        else if (value.isfunction())
+            cir.setReturnValue(silly$transformFunction(value.checkfunction(), caller.getLeft()));
     }
 
     @Unique
@@ -38,15 +46,7 @@ public class EntityAPIMixin {
         for (LuaValue key : table.keys()) {
             LuaValue value = table.rawget(key);
             if (value.isfunction()) {
-                ret.rawset(key, new VarArgFunction() {
-                    @Override
-                    public Varargs invoke(Varargs args) {
-                        BackportsAPI.callerStack.push(caller);
-                        Varargs ret = value.invoke(args);
-                        BackportsAPI.callerStack.pop();
-                        return ret;
-                    }
-                });
+                ret.rawset(key, silly$transformFunction(value.checkfunction(), caller));
             } else if (value.istable()) {
                 ret.rawset(key, silly$transformTable(value.checktable(), caller));
             } else {
@@ -54,6 +54,17 @@ public class EntityAPIMixin {
             }
         }
         return ret;
+    }
 
+    @Unique
+    private static LuaValue silly$transformFunction(LuaFunction func, UUID caller) {
+        return new VarArgFunction() {
+            @Override
+            public Varargs invoke(Varargs args) {
+                try(CallerContext ctx = BackportsAPI.openCallerContext(caller, "TransformedFunction/" + func.hashCode())) {
+                    return func.invoke(args);
+                }
+            }
+        };
     }
 }

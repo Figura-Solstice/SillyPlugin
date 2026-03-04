@@ -1,6 +1,7 @@
 package dev.celestial.silly.mixin;
 
 import com.llamalad7.mixinextras.sugar.ref.LocalRef;
+import dev.celestial.silly.lua.BackportsAPI;
 import dev.celestial.silly.lua.SillyAPI;
 import dev.celestial.silly.not_a_mixin.AvatarAccessor;
 import dev.celestial.silly.not_a_mixin.EventsAccessor;
@@ -16,6 +17,9 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+
+import java.util.UUID;
 
 @Mixin(value = FiguraLuaRuntime.class, remap = false)
 public abstract class FiguraLuaRuntimeMixin {
@@ -27,6 +31,26 @@ public abstract class FiguraLuaRuntimeMixin {
 
     @Shadow
     public abstract void error(Throwable e);
+
+    @Inject(method = "run", at = @At(value = "HEAD"))
+    public void runEnter(Object toRun, Avatar.Instructions limit, Object[] args, CallbackInfoReturnable<Varargs> cir) {
+        BackportsAPI.pushStack(owner.owner, "avatar.run/" + toRun.toString());
+    }
+
+    @Inject(method = "run", at = @At("RETURN"))
+    public void runExit(Object toRun, Avatar.Instructions limit, Object[] args, CallbackInfoReturnable<Varargs> cir) {
+        BackportsAPI.popStack(owner.owner, "avatar.run/" + toRun.toString());
+    }
+
+    @Inject(method = "initializeScript", at = @At(value = "INVOKE", target = "Ljava/util/Stack;push(Ljava/lang/Object;)Ljava/lang/Object;"))
+    public void initScriptEnter(String str, CallbackInfoReturnable<Varargs> cir) {
+        BackportsAPI.pushStack(owner.owner, "initScript/" + str);
+    }
+
+    @Inject(method = "initializeScript", at = @At("TAIL"))
+    public void initScriptExit(String str, CallbackInfoReturnable<Varargs> cir) {
+        BackportsAPI.popStack(owner.owner, "initScript/" + str);
+    }
 
     @Inject(method="error", at = @At("HEAD"), cancellable = true)
     public void errorMixin(Throwable e, CallbackInfo ci) {

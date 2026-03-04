@@ -92,7 +92,7 @@ public class SillyAPI {
                 minecraft.player.setNoGravity(!panic && gravity.getValue());
             if (friction.isOverridden())
                 //noinspection DataFlowIssue
-                minecraft.player.setDiscardFriction(!panic && gravity.getValue());
+                minecraft.player.setDiscardFriction(!panic && friction.getValue());
         }
     }
 

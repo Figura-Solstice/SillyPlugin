@@ -228,7 +228,6 @@ public class SillyAPI {
             this.friction.setValue(null);
             this.frictionValue.setValue(null);
         } else {
-            minecraft.gui.getChat().addMessage(Component.literal(friction.getClass().getSimpleName()));
             avatar.luaRuntime.typeManager.javaToLua(friction).arg1().checkboolean();
         }
         return this;

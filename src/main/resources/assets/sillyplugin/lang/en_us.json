@@ -34,5 +34,8 @@
     "sillyplugin.permissions.value.bumpscocity.tooltip": "silly:whatDoesBumpscocityDo()",
     "sillyplugin.permissions.value.fake_blocks": "Fake blocks",
     "figura.badges.no_permissions.fake_blocks": "Fake blocks",
-    "sillyplugin.permissions.value.fake_blocks.tooltip": "Allows creating ghost blocks."
+    "sillyplugin.permissions.value.fake_blocks.tooltip": "Allows creating ghost blocks.",
+    "sillyplugin.permissions.value.script_exec": "Script Execution",
+    "figura.badges.no_permissions.script_exec": "Script Execution",
+    "sillyplugin.permissions.value.script_exec.tooltip": "Allows or disallows lua code execution\n0 = no scripts\n1 = only init & entity_init event\n2 = all scripts"
 }

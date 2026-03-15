@@ -240,7 +240,7 @@ public class SillyAPI {
     public LuaTable getPermissions() {
         LuaTable table = new LuaTable();
         table.set("FAKE_BLOCKS", LuaValue.valueOf(avatar.permissions.get(SillyPlugin.FAKE_BLOCKS) != 0));
-
+        table.set("SCRIPT_EXEC", LuaValue.valueOf(avatar.permissions.get(SillyPlugin.SCRIPT_EXEC)));
         return table;
     }
 

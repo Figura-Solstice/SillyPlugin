@@ -28,6 +28,7 @@ public class SillyPlugin {
     public static SillyAPI hostInstance;
     public static Permissions BUMPSCOCITY = new Permissions("BUMPSCOCITY", 0, 1000, 0, 0, 0, 0, 0);
     public static Permissions FAKE_BLOCKS = new Permissions("FAKE_BLOCKS", 0, 0, 0, 0, 0);
+    public static Permissions SCRIPT_EXEC = new Permissions("SCRIPT_EXEC", 0, 2, 2, 2, 2, 2, 2);
 //    public static Permissions COLLIDERS = new Permissions("COLLIDERS", 0, 0, 0, 0, 1);
     public static ConcurrentHashMap<UUID, ConcurrentHashMap<BlockPos, BlockState>> FakeBlocks = new ConcurrentHashMap<>();
     public static ConcurrentHashMap<BlockPos, Pair<BlockState, BlockEntity>> RealBlocks = new ConcurrentHashMap<>();
@@ -80,6 +81,6 @@ public class SillyPlugin {
 
     public static void initialize(ISillyLoader loader) {
         Loader = loader;
-        PermissionManager.CUSTOM_PERMISSIONS.put("sillyplugin", List.of(BUMPSCOCITY, FAKE_BLOCKS/*, COLLIDERS*/));
+        PermissionManager.CUSTOM_PERMISSIONS.put("sillyplugin", List.of(BUMPSCOCITY, FAKE_BLOCKS, SCRIPT_EXEC/*, COLLIDERS*/));
     }
 }

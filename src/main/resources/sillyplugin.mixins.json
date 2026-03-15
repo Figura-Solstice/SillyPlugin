@@ -29,7 +29,9 @@
     "FiguraGlobalsDocsMixin",
     "FiguraListDocsMixin",
     "FiguraLuaRuntimeMixin",
+    "FiguraRunCommandMixin",
     "PlayerMixin",
-    "RuntimeAccessor"
+    "RuntimeAccessor",
+    "WorldAPIMixin"
   ]
 }

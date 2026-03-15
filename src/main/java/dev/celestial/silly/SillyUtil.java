@@ -20,7 +20,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 public class SillyUtil {
-    public static final boolean DEV_MODE = true;
+    public static final boolean DEV_MODE = false;
     private static Services services;
     public static Avatar getAvatar(String username) {
         Minecraft mc = Minecraft.getInstance();

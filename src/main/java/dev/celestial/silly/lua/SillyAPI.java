@@ -27,6 +27,7 @@ import org.figuramc.figura.avatar.local.LocalAvatarFetcher;
 import org.figuramc.figura.backend2.NetworkStuff;
 import org.figuramc.figura.config.Configs;
 import org.figuramc.figura.gui.widgets.lists.AvatarList;
+import org.figuramc.figura.lua.FiguraLuaJson;
 import org.figuramc.figura.lua.FiguraLuaRuntime;
 import org.figuramc.figura.lua.LuaNotNil;
 import org.figuramc.figura.lua.LuaWhitelist;
@@ -369,7 +370,7 @@ public class SillyAPI {
 
     @LuaWhitelist
     @LuaMethodDoc(
-            value = "set_block",
+            value = "silly.set_block",
             overloads = {
                     @LuaMethodOverload(
                             argumentNames = { "pos", "block" },
@@ -406,6 +407,31 @@ public class SillyAPI {
                     lvl.setBlock(bp, real.getLeft(), 2);
                     if (real.getRight() != null)
                         lvl.setBlockEntity(real.getRight());
+                }
+            }
+        }
+    }
+
+    @LuaWhitelist
+    @LuaMethodDoc(
+            value = "silly.get_block_entity", 
+            overloads = {
+                    @LuaMethodOverload(
+                            argumentNames = { "pos", "callback" }, 
+                            argumentTypes = { FiguraVec3.class, LuaFunction.class }
+                    )
+            }
+    )
+    public void getBlockEntity(@LuaNotNil FiguraVec3 pos, @LuaNotNil LuaFunction callback) {
+        if (minecraft.player.hasPermissions(2)) {
+            var conn = minecraft.getConnection();
+            if (conn != null) {
+                try {
+                    conn.getDebugQueryHandler().queryBlockEntityTag(pos.asBlockPos(), (nbt) -> {
+                        callback.call((nbt != null) ? FiguraLuaJson.jsonStringToTable(nbt.toString()) : LuaValue.NIL);
+                    });
+                } catch (Exception e) {
+                    throw new LuaError(e);
                 }
             }
         }

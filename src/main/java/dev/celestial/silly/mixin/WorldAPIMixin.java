@@ -1,6 +1,7 @@
 package dev.celestial.silly.mixin;
 
 import com.llamalad7.mixinextras.lib.apache.commons.tuple.Pair;
+import dev.celestial.silly.SillyUtil;
 import dev.celestial.silly.helper.CallerContext;
 import dev.celestial.silly.lua.BackportsAPI;
 import org.figuramc.figura.lua.ReadOnlyLuaTable;
@@ -27,37 +28,11 @@ public class WorldAPIMixin {
         Pair<UUID, String> caller = BackportsAPI.callerStack.get().peek();
         if (caller == null) throw new IllegalStateException("Caller stack peek gave null (?!?!?!?)");
         for (Map.Entry<String, LuaTable> e : val.entrySet()) {
-            ret.put(e.getKey(), createReadOnlyLuaTable(silly$transformTable(e.getValue(), caller.getLeft())));
+            ret.put(e.getKey(), SillyUtil.createReadOnlyLuaTable(silly$transformTable(e.getValue(), caller.getLeft())));
         }
         cir.setReturnValue(ret);
     }
 
-    @Unique
-    private static Class<?> roltClass;
-    @Unique
-    private static LuaTable createReadOnlyLuaTable(LuaTable tbl) {
-        if (roltClass != null) {
-            try {
-                return (LuaTable) roltClass.getConstructor(LuaValue.class).newInstance(tbl);
-            } catch (Exception e) {
-                throw new LuaError(e);
-            }
-        }
-        try {
-            roltClass = Class.forName("org.figuramc.figura.lua.ReadOnlyLuaTable");
-        } catch (Exception e) {
-            try {
-                roltClass = Class.forName("org.figuramc.figura.lua.transfer.ReadOnlyLuaTable");
-            } catch (ClassNotFoundException ex) {
-                throw new LuaError("Could not create ReadOnlyLuaTable!");
-            }
-        }
-        try {
-            return (LuaTable) roltClass.getConstructor(LuaValue.class).newInstance(tbl);
-        } catch (Exception e) {
-            throw new LuaError(e);
-        }
-    }
 
     @Unique
     private static LuaTable silly$transformTable(LuaTable table, UUID caller) {

@@ -14,6 +14,10 @@ import net.minecraft.server.Services;
 import net.minecraft.world.entity.player.Player;
 import org.figuramc.figura.avatar.Avatar;
 import org.figuramc.figura.avatar.AvatarManager;
+import org.luaj.vm2.LuaError;
+import org.luaj.vm2.LuaTable;
+import org.luaj.vm2.LuaValue;
+import org.spongepowered.asm.mixin.Unique;
 
 import java.util.List;
 import java.util.Optional;
@@ -54,6 +58,32 @@ public class SillyUtil {
         }
 
         return AvatarManager.getAvatarForPlayer(uuid);
+    }
+
+
+    private static Class<?> roltClass;
+    public static LuaTable createReadOnlyLuaTable(LuaTable tbl) {
+        if (roltClass != null) {
+            try {
+                return (LuaTable) roltClass.getConstructor(LuaValue.class).newInstance(tbl);
+            } catch (Exception e) {
+                throw new LuaError(e);
+            }
+        }
+        try {
+            roltClass = Class.forName("org.figuramc.figura.lua.ReadOnlyLuaTable");
+        } catch (Exception e) {
+            try {
+                roltClass = Class.forName("org.figuramc.figura.lua.transfer.ReadOnlyLuaTable");
+            } catch (ClassNotFoundException ex) {
+                throw new LuaError("Could not create ReadOnlyLuaTable!");
+            }
+        }
+        try {
+            return (LuaTable) roltClass.getConstructor(LuaValue.class).newInstance(tbl);
+        } catch (Exception e) {
+            throw new LuaError(e);
+        }
     }
 
     public static boolean canCheat(SillyAPI api) {

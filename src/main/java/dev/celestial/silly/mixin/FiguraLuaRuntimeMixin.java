@@ -4,16 +4,17 @@ import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import dev.celestial.silly.SillyPlugin;
+import dev.celestial.silly.helper.AutoProfile;
 import dev.celestial.silly.lua.BackportsAPI;
 import dev.celestial.silly.helper.CallerContext;
 import dev.celestial.silly.lua.SillyAPI;
+import dev.celestial.silly.lua.SillyProfiler;
 import dev.celestial.silly.not_a_mixin.AvatarAccessor;
 import dev.celestial.silly.not_a_mixin.EventsAccessor;
 import org.figuramc.figura.avatar.Avatar;
 import org.figuramc.figura.lua.FiguraLuaRuntime;
 import org.figuramc.figura.lua.api.event.LuaEvent;
 import org.luaj.vm2.LuaError;
-import org.luaj.vm2.LuaValue;
 import org.luaj.vm2.Varargs;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -40,7 +41,17 @@ public abstract class FiguraLuaRuntimeMixin {
     public Varargs runMixin(Object toRun, Avatar.Instructions limit, Object[] args, Operation<Varargs> original) {
         if (owner.permissions.get(SillyPlugin.SCRIPT_EXEC) > 1 || toRun == "ENTITY_INIT")
             try(CallerContext ctx = BackportsAPI.openCallerContext(owner.owner, "avatarRun")) {
-                return original.call(toRun, limit, args);
+                if (toRun == "RENDER") {
+                    SillyProfiler prf = ((AvatarAccessor)owner).silly$getProfiler();
+                    if (prf == null) {
+                        return original.call(toRun, limit, args);
+                    }
+                    try (AutoProfile profiler = AutoProfile.start(prf.lastRenderEventTimes::push)) {
+                        return original.call(toRun, limit, args);
+                    }
+                } else {
+                    return original.call(toRun, limit, args);
+                }
             }
         else {
             owner.noPermissions.add(SillyPlugin.SCRIPT_EXEC);
@@ -72,6 +83,7 @@ public abstract class FiguraLuaRuntimeMixin {
     public void errorMixin(Throwable e, CallbackInfo ci) {
         if (owner.luaRuntime == null) return;
         LuaEvent ev = ((EventsAccessor)owner.luaRuntime.events).silly$getErrorEvent();
+        if (ev == null) return;
         if (ev.__len() > 0) {
             if (injectIntoError) {
                 injectIntoError = false;

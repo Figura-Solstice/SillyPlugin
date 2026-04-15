@@ -22,14 +22,19 @@ public class EventsAPIMixin implements EventsAccessor {
     @LuaFieldDoc("events.error")
     public LuaEvent ERROR;
 
+    @Unique
+    @LuaWhitelist
+    @LuaFieldDoc("events.gui_render")
+    public LuaEvent GUI_RENDER;
+
     @Shadow
     @Final
     private Map<String, LuaEvent> events;
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void initMixin(CallbackInfo ci) {
-        ERROR = new LuaEvent();
-        events.put("ERROR", ERROR);
+        ERROR = events.put("ERROR", new LuaEvent());
+        GUI_RENDER = events.put("GUI_RENDER", new LuaEvent());
     }
 
     @Override

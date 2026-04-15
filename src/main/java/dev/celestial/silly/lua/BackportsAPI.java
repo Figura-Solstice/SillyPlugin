@@ -33,19 +33,21 @@ public class BackportsAPI {
         this.owner = runtime.owner;
     }
     public static ThreadLocal<Deque<Pair<UUID, String>>> callerStack = ThreadLocal.withInitial(ArrayDeque::new);
-    public static CyclicalDeque<String> ops = new CyclicalDeque<>(32);
+    public static CyclicalDeque<String> ops = new CyclicalDeque<>(SillyUtil.DEV_MODE ? 256 : 16);
 
     public static CallerContext openCallerContext(UUID uuid, String context) {
         return CallerContext.Open(uuid, context);
     }
 
     public static void pushStack(UUID uuid, String context) {
-        ops.push("PUSH " + formatStackPair(Pair.of(uuid, context)));
+        if (SillyUtil.DEV_MODE)
+            ops.push("PUSH " + formatStackPair(Pair.of(uuid, context)));
         callerStack.get().push(Pair.of(uuid, context));
     }
 
     public static void popStack(UUID expectedUUID, String expectedContext) {
-        ops.push("POP " + formatStackPair(Pair.of(expectedUUID, expectedContext)));
+        if (SillyUtil.DEV_MODE)
+            ops.push("POP " + formatStackPair(Pair.of(expectedUUID, expectedContext)));
         Pair<UUID, String> expected = Pair.of(expectedUUID, expectedContext);
         try {
             Pair<UUID, String> item = callerStack.get().pop();

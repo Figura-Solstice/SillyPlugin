@@ -25,6 +25,10 @@ public class CyclicalDeque<T> extends AbstractCollection<T> {
         inner.push(obj);
     }
 
+    public T getFirst() {
+        return inner.getFirst();
+    }
+
     @Override
     public @NotNull Iterator<T> iterator() {
         return inner.iterator();

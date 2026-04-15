@@ -1,9 +1,11 @@
 package dev.celestial.silly.mixin;
 
 import dev.celestial.silly.SillyUtil;
+import dev.celestial.silly.helper.LuaGraphics;
 import dev.celestial.silly.lua.BackportsAPI;
 import dev.celestial.silly.lua.DevAPI;
 import dev.celestial.silly.lua.SillyAPI;
+import dev.celestial.silly.lua.SillyProfiler;
 import dev.celestial.silly.not_a_mixin.AvatarAccessor;
 import org.figuramc.figura.lua.FiguraAPIManager;
 import org.figuramc.figura.lua.FiguraLuaRuntime;
@@ -30,6 +32,8 @@ public class FiguraAPIManagerMixin {
     static {
         WHITELISTED_CLASSES.add(SillyAPI.class);
         WHITELISTED_CLASSES.add(BackportsAPI.class);
+        WHITELISTED_CLASSES.add(LuaGraphics.class);
+        WHITELISTED_CLASSES.add(SillyProfiler.class);
         if (SillyUtil.DEV_MODE) {
             WHITELISTED_CLASSES.add(DevAPI.class);
             API_GETTERS.put("silly_dev", r -> r.owner.isHost ? new DevAPI(r) : null);

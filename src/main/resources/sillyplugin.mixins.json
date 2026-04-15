@@ -1,37 +1,39 @@
 {
-  "package": "dev.celestial.silly.mixin",
-  "required": true,
-  "minVersion": "0.8",
-  "injectors": {
-    "defaultRequire": 1
-  },
-  "compatibilityLevel": "JAVA_17",
-  "client": [
-    "ClientPacketListenerMixin",
-    "LocalPlayerMixin",
-    "MinecraftAccessor",
-    "MinecraftClientMixin",
-    "hud.BossHealthOverlayMixin",
-    "hud.ChatComponentMixin",
-    "hud.GuiMixin",
-    "hud.PlayerTabOverlayMixin",
-    "hud.SubtitleOverlayMixin"
-  ],
-  "mixins": [
-    "AvatarManagerMixin",
-    "AvatarMixin",
-    "BlockMixin",
-    "EntityAPIMixin",
-    "EntityMixin",
-    "EventsAPIMixin",
-    "FiguraAPIManagerMixin",
-    "FiguraDocsManagerMixin",
-    "FiguraGlobalsDocsMixin",
-    "FiguraListDocsMixin",
-    "FiguraLuaRuntimeMixin",
-    "FiguraRunCommandMixin",
-    "PlayerMixin",
-    "RuntimeAccessor",
-    "WorldAPIMixin"
-  ]
+    "package": "dev.celestial.silly.mixin",
+    "required": true,
+    "minVersion": "0.8",
+    "injectors": {
+        "defaultRequire": 1
+    },
+    "compatibilityLevel": "JAVA_17",
+    "client": [
+        "ClientPacketListenerMixin",
+        "LocalPlayerMixin",
+        "MinecraftAccessor",
+        "MinecraftClientMixin",
+        "hud.BossHealthOverlayMixin",
+        "hud.ChatComponentMixin",
+        "hud.GuiMixin",
+        "hud.PlayerTabOverlayMixin",
+        "hud.SubtitleOverlayMixin"
+    ],
+    "mixins": [
+        "AvatarManagerMixin",
+        "AvatarMixin",
+        "BlockMixin",
+        "EntityAPIMixin",
+        "EntityMixin",
+        "EventsAPIMixin",
+        "FiguraAPIManagerMixin",
+        "FiguraDocsManagerMixin",
+        "FiguraGlobalsDocsMixin",
+        "FiguraListDocsMixin",
+        "FiguraLuaRuntimeMixin",
+        "FiguraRunCommandMixin",
+        "LuaScriptParserInvokers",
+        "NetworkStuffMixin",
+        "PlayerMixin",
+        "RuntimeAccessor",
+        "WorldAPIMixin"
+    ]
 }

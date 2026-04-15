@@ -4,6 +4,9 @@ import dev.celestial.silly.helper.Overridable;
 import dev.celestial.silly.SillyEnums;
 import dev.celestial.silly.SillyPlugin;
 import dev.celestial.silly.SillyUtil;
+import dev.celestial.silly.mixin.LuaScriptParserInvokers;
+import dev.celestial.silly.not_a_mixin.AvatarAccessor;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.multiplayer.ClientPacketListener;
@@ -27,10 +30,7 @@ import org.figuramc.figura.avatar.local.LocalAvatarFetcher;
 import org.figuramc.figura.backend2.NetworkStuff;
 import org.figuramc.figura.config.Configs;
 import org.figuramc.figura.gui.widgets.lists.AvatarList;
-import org.figuramc.figura.lua.FiguraLuaJson;
-import org.figuramc.figura.lua.FiguraLuaRuntime;
-import org.figuramc.figura.lua.LuaNotNil;
-import org.figuramc.figura.lua.LuaWhitelist;
+import org.figuramc.figura.lua.*;
 import org.figuramc.figura.lua.api.ping.PingArg;
 import org.figuramc.figura.lua.api.ping.PingFunction;
 import org.figuramc.figura.lua.api.world.BlockStateAPI;
@@ -38,8 +38,10 @@ import org.figuramc.figura.lua.api.world.WorldAPI;
 import org.figuramc.figura.lua.docs.LuaMethodDoc;
 import org.figuramc.figura.lua.docs.LuaMethodOverload;
 import org.figuramc.figura.lua.docs.LuaTypeDoc;
+import org.figuramc.figura.math.matrix.FiguraMat4;
 import org.figuramc.figura.math.vector.FiguraVec2;
 import org.figuramc.figura.math.vector.FiguraVec3;
+import org.figuramc.figura.parsers.LuaScriptParser;
 import org.figuramc.figura.utils.EntityUtils;
 import org.figuramc.figura.utils.LuaUtils;
 import org.luaj.vm2.*;
@@ -59,11 +61,13 @@ public class SillyAPI {
     public Overridable<Boolean> gravity = new Overridable<>();
     public Overridable<Boolean> friction = new Overridable<>();
     public Overridable<Float> frictionValue = new Overridable<>();
+    public Overridable<FiguraMat4> guiMat = new Overridable<>();
     public boolean disableEntityCollisions = false;
     public boolean noclip = false;
     public boolean local;
     public Set<SillyEnums.GUI_ELEMENT> disabledElements = new HashSet<>();
     public boolean fakeBlocksDisabled = false;
+    public Set<UUID> customSubscriptions = new HashSet<>();
 
     public SillyAPI(Avatar avatar) {
         SillyPlugin.FakeBlocks.put(avatar.owner, new ConcurrentHashMap<>());
@@ -71,12 +75,15 @@ public class SillyAPI {
         this.avatar = avatar;
         this.minecraft = Minecraft.getInstance();
         local = avatar.isHost;
+        ((AvatarAccessor)avatar).silly$setProfiler(new SillyProfiler());
         if (local) SillyPlugin.hostInstance = this;
     }
 
     public SillyAPI(FiguraLuaRuntime runtime) {
         this(runtime.owner);
     }
+
+
 
     public void onPanic(boolean panic) {
         if (!local) return;
@@ -156,6 +163,29 @@ public class SillyAPI {
     }
 
     @LuaWhitelist
+    @LuaMethodDoc(value = "silly.get_figura_debug_string")
+    public String getFiguraDebugString() {
+        // taken from that one mixin in figura
+        StringBuilder lines = new StringBuilder();
+        lines.append(ChatFormatting.AQUA + "[" + FiguraMod.MOD_NAME + "]" + ChatFormatting.RESET);
+        lines.append('\n');
+        lines.append("Version: " + FiguraMod.VERSION);
+        lines.append('\n');
+
+        Avatar avatar = AvatarManager.getAvatarForPlayer(FiguraMod.getLocalPlayerUUID());
+        lines.append(String.format("Model Complexity: %d\n", avatar.complexity.pre));
+        lines.append(String.format("Animations Complexity: %d\n", avatar.animationComplexity));
+        lines.append(String.format("Animations instructions: %d\n", avatar.animation.pre));
+        lines.append(String.format("Init instructions: %d (W: %d E: %d)\n", avatar.init.getTotal(), avatar.init.pre, avatar.init.post));
+        lines.append(String.format("Tick instructions: %d (W: %d E: %d)\n", avatar.tick.getTotal() + avatar.worldTick.getTotal(), avatar.worldTick.pre, avatar.tick.pre));
+        lines.append(String.format("Render instructions: %d (E: %d PE: %d)\n", avatar.render.getTotal(), avatar.render.pre, avatar.render.post));
+        lines.append(String.format("World Render instructions: %d (W: %d PW: %d)\n", avatar.worldRender.getTotal(), avatar.worldRender.pre, avatar.worldRender.post));
+        lines.append(String.format("Pings per second: ↑%d, ↓%d\n", NetworkStuff.pingsSent, NetworkStuff.pingsReceived));
+
+        return lines.toString();
+    }
+
+    @LuaWhitelist
     @LuaMethodDoc(
             value = "silly.set_gravity",
             overloads = {
@@ -169,7 +199,7 @@ public class SillyAPI {
     public SillyAPI setGravity(Boolean gravity) {
         cheatExecutor(plr -> {
             plr.setNoGravity((!gravity));
-            this.gravity.setValue(gravity);
+            this.gravity.setValue(!gravity);
         });
         return this;
     }
@@ -199,6 +229,16 @@ public class SillyAPI {
     }
 
     @LuaWhitelist
+    public SillyAPI setGuiMatrix(FiguraMat4 mat) {
+        if (mat == null) {
+            guiMat.setValue(null);
+            return this;
+        }
+        guiMat.setValue(mat);
+        return this;
+    }
+
+    @LuaWhitelist
     @LuaMethodDoc(value = "silly.set_friction",
         overloads = {
             @LuaMethodOverload(
@@ -217,7 +257,7 @@ public class SillyAPI {
         if (friction instanceof Boolean fric) {
             cheatExecutor(plr -> {
                 plr.setDiscardFriction((!fric));
-                this.friction.setValue(fric);
+                this.friction.setValue(!fric);
             });
         } else if (friction instanceof Float fric) {
             cheatExecutor(plr -> {
@@ -423,18 +463,26 @@ public class SillyAPI {
             }
     )
     public void getBlockEntity(@LuaNotNil FiguraVec3 pos, @LuaNotNil LuaFunction callback) {
+        if (!local) return;
+        assert minecraft.player != null;
         if (minecraft.player.hasPermissions(2)) {
             var conn = minecraft.getConnection();
             if (conn != null) {
                 try {
                     conn.getDebugQueryHandler().queryBlockEntityTag(pos.asBlockPos(), (nbt) -> {
-                        callback.call((nbt != null) ? FiguraLuaJson.jsonStringToTable(nbt.toString()) : LuaValue.NIL);
+                        callback.call((nbt != null) ? NbtToLua.convert(nbt) : LuaValue.NIL);
                     });
                 } catch (Exception e) {
                     throw new LuaError(e);
                 }
             }
         }
+    }
+
+    @LuaWhitelist
+    @LuaMethodDoc(value = "silly.getNanoTime")
+    public Long getNanoTime() {
+        return System.nanoTime();
     }
 
     @LuaWhitelist
@@ -471,6 +519,7 @@ public class SillyAPI {
             aliases = {"setBlocksEnabled"}
     )
     public SillyAPI setFakeBlocksEnabled(Boolean state) {
+        if (!local) return this;
         state = state != null && state;
         state = !state;
         this.fakeBlocksDisabled = state;
@@ -488,6 +537,69 @@ public class SillyAPI {
             });
         }
         return this;
+    }
+
+    @LuaWhitelist
+    public SillyProfiler getProfiler(String name) {
+        if (name == null) return ((AvatarAccessor)avatar).silly$getProfiler();
+        Avatar other = SillyUtil.getAvatar(name);
+        if (other == null)
+            return null;
+        return ((AvatarAccessor)other).silly$getProfiler();
+    }
+
+    @LuaWhitelist
+    public String formatScript(@LuaNotNil String script, String level) {
+        if (level == null) {
+            level = switch(Configs.FORMAT_SCRIPT.value) {
+                case 0 -> "NONE";
+                case 1 -> "LIGHT";
+                case 2 -> "HEAVY";
+                case 3 -> "AST";
+                default -> throw new IllegalStateException("Unexpected value: " + Configs.FORMAT_SCRIPT.value);
+            };
+        }
+        // create instance because that shuts intelliJ's screams up
+        // altough....
+        //noinspection InstantiationOfUtilityClass
+        LuaScriptParserInvokers invoker = (LuaScriptParserInvokers) (new LuaScriptParser());
+        return switch(level.toUpperCase()) {
+            case "NONE" -> invoker.invokeNoMinifier(script);
+            case "LIGHT" -> invoker.invokeRegexMinify("script", script);
+            case "HEAVY" -> invoker.invokeAggressiveMinify("script", script);
+            case "AST" -> invoker.invokeASTMinify("script", script);
+            default -> throw new LuaError("Unknown minification level " + level);
+        };
+    }
+
+    @LuaWhitelist
+    public void setVehicleVelocity(Object x, Float y, Float z) {
+        if (!local) return;
+        assert minecraft.player != null;
+        Entity vehicle = minecraft.player.getVehicle();
+        if (vehicle == null) return;
+        Vec3 current = vehicle.getDeltaMovement();
+        FiguraVec3 vel = LuaUtils.parseVec3("setVehicleVelocity", x, y, z, current.x, current.y, current.z);
+        if (isVectorOkay(vel))
+            cheatExecutor(plr -> {
+                vehicle.setDeltaMovement(vel.asVec3());
+            });
+    }
+
+    @LuaWhitelist
+    public SillyAPI setSubscribePings(String uuid, Boolean state) {
+        if (!local) return this;
+        try {
+            UUID id = UUID.fromString(uuid);
+            if (state)
+                customSubscriptions.add(id);
+            else
+                customSubscriptions.remove(id);
+            return this;
+        }
+        catch (IllegalArgumentException e) {
+           throw new LuaError("Argument 2: Expected UUID, got string.");
+        }
     }
 
     @LuaWhitelist
@@ -513,6 +625,8 @@ public class SillyAPI {
         return this;
     }
 
+    // TODO: see if theres another way to do varargs using figura.
+    //       this function explodes if the first vararg passed is nil...
     @LuaWhitelist
     @LuaMethodDoc(
             value = "silly.ping",
@@ -649,7 +763,7 @@ public class SillyAPI {
             },
             aliases = {"setVel"}
     )
-    public void setVelocity(@LuaNotNil Object x, Float y, Float z) {
+    public void setVelocity(Object x, Float y, Float z) {
         assert minecraft.player != null;
         Vec3 current = minecraft.player.getDeltaMovement();
         FiguraVec3 vel = LuaUtils.parseVec3("setVelocity", x, y, z, current.x, current.y, current.z);

@@ -1,8 +1,8 @@
 package dev.celestial.silly.helper;
 
 //? if >=1.21 {
-import net.minecraft.client.DeltaTracker;
-//?}
+/*import net.minecraft.client.DeltaTracker;
+*///?}
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
@@ -93,23 +93,23 @@ public class LuaGraphics {
         if (texture instanceof FiguraTexture tx) {
             region = region != null ? region : FiguraVec4.of(0,0,tx.getWidth(), tx.getHeight());
             //? if >=1.21.2 {
-            graphics.blit(RenderType::guiTextured, tx.getLocation(), (int)pos.x, (int)pos.y, 0, (int)region.x, (int)region.y, (int)region.z, (int)region.w, tx.getWidth(), tx.getHeight());
-            //?} else {
-            /*graphics.blit(tx.getLocation(), (int)pos.x, (int)pos.y, 0, (int)region.x, (int)region.y, (int)region.z, (int)region.w, tx.getWidth(), tx.getHeight());
-            *///?}
+            /*graphics.blit(RenderType::guiTextured, tx.getLocation(), (int)pos.x, (int)pos.y, 0, (int)region.x, (int)region.y, (int)region.z, (int)region.w, tx.getWidth(), tx.getHeight());
+            *///?} else {
+            graphics.blit(tx.getLocation(), (int)pos.x, (int)pos.y, 0, (int)region.x, (int)region.y, (int)region.z, (int)region.w, tx.getWidth(), tx.getHeight());
+            //?}
         } else if (texture instanceof String str) {
             //? if >=1.21 {
-            ResourceLocation loc = ResourceLocation.tryParse(str);
-            //?} else {
-            /*ResourceLocation loc = new ResourceLocation(str);
-            *///?}
+            /*ResourceLocation loc = ResourceLocation.tryParse(str);
+            *///?} else {
+            ResourceLocation loc = new ResourceLocation(str);
+            //?}
 
             AbstractTexture tx = Minecraft.getInstance().getTextureManager().getTexture(loc);
             //? if >=1.21.2 {
-            graphics.blit(RenderType::guiTextured, loc, (int)pos.x, (int)pos.y, 0, (int)region.x, (int)region.y, (int)region.z, (int)region.w, 256, 256);
-            //?} else {
-            /*graphics.blit(loc, (int)pos.x, (int)pos.y, 0, (int)region.x, (int)region.y, (int)region.z, (int)region.w, 256, 256);
-            *///?}
+            /*graphics.blit(RenderType::guiTextured, loc, (int)pos.x, (int)pos.y, 0, (int)region.x, (int)region.y, (int)region.z, (int)region.w, 256, 256);
+            *///?} else {
+            graphics.blit(loc, (int)pos.x, (int)pos.y, 0, (int)region.x, (int)region.y, (int)region.z, (int)region.w, 256, 256);
+            //?}
 
         } else {
             throw new LuaError("LuaGraphics.blit 2, expected FiguraTexture or String, got " + texture.getClass().getSimpleName());
@@ -143,10 +143,10 @@ public class LuaGraphics {
         _pushPose();
 
         //? if >=1.21 {
-        graphics.pose().mulPose(matrix.toMatrix4f());
-        //?} else {
-        /*graphics.pose().mulPoseMatrix(matrix.toMatrix4f());
-        *///?}
+        /*graphics.pose().mulPose(matrix.toMatrix4f());
+        *///?} else {
+        graphics.pose().mulPoseMatrix(matrix.toMatrix4f());
+        //?}
         return this;
     }
 
@@ -164,10 +164,10 @@ public class LuaGraphics {
         graphics.pose().pushPose();
         graphics.pose().scale(16,16,16);
         //? if >=1.21 {
-        InventoryScreen.renderEntityInInventory(graphics, (int)pos.x, (int)pos.y, 1, new Vector3f(), quat, null, entity.getEntity());
-        //?} else {
-        /*InventoryScreen.renderEntityInInventory(graphics, (int)pos.x, (int)pos.y, 1, quat, null, entity.getEntity());
-        *///?}
+        /*InventoryScreen.renderEntityInInventory(graphics, (int)pos.x, (int)pos.y, 1, new Vector3f(), quat, null, entity.getEntity());
+        *///?} else {
+        InventoryScreen.renderEntityInInventory(graphics, (int)pos.x, (int)pos.y, 1, quat, null, entity.getEntity());
+        //?}
 
         graphics.pose().popPose();
         return this;

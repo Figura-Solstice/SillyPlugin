@@ -1,5 +1,5 @@
 //? if fabric {
-/*package dev.celestial.silly.loaders.fabric;
+package dev.celestial.silly.loaders.fabric;
 
 import dev.celestial.silly.SillyPlugin;
 import com.mojang.logging.LogUtils;
@@ -31,4 +31,4 @@ public class FabricEntrypoint implements ModInitializer, ISillyLoader {
         return container.map(modContainer -> modContainer.getMetadata().getVersion().getFriendlyString()).orElse(null);
     }
 }
-*///?}
+//?}

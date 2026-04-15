@@ -23,7 +23,7 @@ public abstract class LocalPlayerMixin extends Player {
     }
 
     //? if neoforge && >=1.21 {
-    @WrapOperation(method = "aiStep", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/player/LocalPlayer;mayFly()Z"))
+    /*@WrapOperation(method = "aiStep", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/player/LocalPlayer;mayFly()Z"))
     public boolean mayFlyMixin(LocalPlayer instance, Operation<Boolean> original) {
         boolean orig = original.call(instance);
         SillyAPI silly = SillyPlugin.hostInstance;
@@ -33,8 +33,8 @@ public abstract class LocalPlayerMixin extends Player {
         if (AvatarManager.panic) return orig;
         return silly.mayFly.getValue();
     }
-    //?} else {
-    /*@Redirect(method = "aiStep", at = @At(value = "FIELD", target = "Lnet/minecraft/world/entity/player/Abilities;mayfly:Z", opcode = Opcodes.GETFIELD))
+    *///?} else {
+    @Redirect(method = "aiStep", at = @At(value = "FIELD", target = "Lnet/minecraft/world/entity/player/Abilities;mayfly:Z", opcode = Opcodes.GETFIELD))
     public boolean getAbilitiesMixin(Abilities instance) {
         SillyAPI silly = SillyPlugin.hostInstance;
         if (silly == null) return instance.mayfly;
@@ -43,5 +43,5 @@ public abstract class LocalPlayerMixin extends Player {
         if (AvatarManager.panic) return instance.mayfly;
         return silly.mayFly.getValue();
     }
-    *///?}
+    //?}
 }

@@ -1,5 +1,5 @@
 //? if neoforge {
-package dev.celestial.silly.loaders.neoforge;
+/*package dev.celestial.silly.loaders.neoforge;
 
 import dev.celestial.silly.SillyPlugin;
 import com.mojang.logging.LogUtils;
@@ -27,4 +27,4 @@ public class NeoforgeEntrypoint implements ISillyLoader {
         return ModList.get().getModContainerById(SillyPlugin.MOD_ID).map(cont -> cont.getModInfo().getVersion().getQualifier()).orElse(null);
     }
 }
-//?}
+*///?}

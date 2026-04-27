@@ -23,7 +23,7 @@ public class FiguraDocsManagerMixin {
     private static Map<Class<?>, String> NAME_MAP;
 
     static {
-        GLOBAL_CHILDREN.put("silly", List.of(SillyAPI.class, BackportsAPI.class));
+        GLOBAL_CHILDREN.put("silly", List.of(SillyAPI.class, BackportsAPI.class, SillyAPI.SillyVehicleAPI.class));
 
         NAME_MAP.put(SillyEnums.GUI_ELEMENT.class, "GuiElement");
     }

@@ -13,12 +13,16 @@ import net.minecraft.client.renderer.entity.LivingEntityRenderer;
 import net.minecraft.world.entity.Entity;
 import org.figuramc.figura.avatar.Avatar;
 import org.figuramc.figura.model.rendering.PartFilterScheme;
+import org.jetbrains.annotations.Nullable;
 import org.luaj.vm2.Varargs;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @Mixin(value = Avatar.class, remap = false)
 public class AvatarMixin implements AvatarAccessor {
@@ -28,6 +32,9 @@ public class AvatarMixin implements AvatarAccessor {
     @Unique
     public SillyProfiler profiler;
 
+    @Unique
+    public Map<Class<?>, Object> silly$userdata = new HashMap<>();
+
     @Override
     public SillyAPI silly$getSilly() {
         return silly;
@@ -36,7 +43,18 @@ public class AvatarMixin implements AvatarAccessor {
     @Override
     public SillyAPI silly$setSilly(SillyAPI instance) {
         silly = instance;
+        silly$setUserData(SillyAPI.class, instance);
         return silly;
+    }
+
+    @Override
+    public Object silly$setUserData(Class<?> clazz, Object instance) {
+        return silly$userdata.put(clazz, instance);
+    }
+
+    @Override
+    public @Nullable Object silly$getUserData(Class<?> clazz) {
+        return silly$userdata.get(clazz);
     }
 
     @Override

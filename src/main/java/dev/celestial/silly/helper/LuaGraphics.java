@@ -104,7 +104,6 @@ public class LuaGraphics {
             ResourceLocation loc = new ResourceLocation(str);
             //?}
 
-            AbstractTexture tx = Minecraft.getInstance().getTextureManager().getTexture(loc);
             //? if >=1.21.2 {
             /*graphics.blit(RenderType::guiTextured, loc, (int)pos.x, (int)pos.y, 0, (int)region.x, (int)region.y, (int)region.z, (int)region.w, 256, 256);
             *///?} else {
@@ -112,7 +111,7 @@ public class LuaGraphics {
             //?}
 
         } else {
-            throw new LuaError("LuaGraphics.blit 2, expected FiguraTexture or String, got " + texture.getClass().getSimpleName());
+            throw new LuaError("LuaGraphics.blit, expected FiguraTexture or String, got " + texture.getClass().getSimpleName());
         }
 
         return this;

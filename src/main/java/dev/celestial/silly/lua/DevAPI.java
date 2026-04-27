@@ -42,7 +42,7 @@ public class DevAPI {
     public LuaTable get_stack_ops() {
         LuaTable ret = new LuaTable();
         int i = 1;
-        for (String op : BackportsAPI.ops) {
+        for (String op : BackportsAPI.ops.get()) {
             ret.set(i, op);
             i++;
         }

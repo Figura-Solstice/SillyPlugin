@@ -4,7 +4,7 @@ import org.figuramc.figura.parsers.LuaScriptParser;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Invoker;
 
-@Mixin(LuaScriptParser.class)
+@Mixin(value = LuaScriptParser.class, remap = false)
 public interface LuaScriptParserInvokers {
     @Invoker("noMinifier")
     public String invokeNoMinifier(String script);

@@ -34,6 +34,7 @@ public class FiguraAPIManagerMixin {
         WHITELISTED_CLASSES.add(BackportsAPI.class);
         WHITELISTED_CLASSES.add(LuaGraphics.class);
         WHITELISTED_CLASSES.add(SillyProfiler.class);
+        WHITELISTED_CLASSES.add(SillyAPI.SillyVehicleAPI.class);
         if (SillyUtil.DEV_MODE) {
             WHITELISTED_CLASSES.add(DevAPI.class);
             API_GETTERS.put("silly_dev", r -> r.owner.isHost ? new DevAPI(r) : null);

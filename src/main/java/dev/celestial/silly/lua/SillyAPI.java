@@ -1,5 +1,8 @@
 package dev.celestial.silly.lua;
 
+import dev.celestial.silly.annotations.AutoProperty;
+import dev.celestial.silly.annotations.AutoPropertyWhitelist;
+import dev.celestial.silly.annotations.ReadOnly;
 import dev.celestial.silly.helper.Overridable;
 import dev.celestial.silly.SillyEnums;
 import dev.celestial.silly.SillyPlugin;
@@ -54,6 +57,7 @@ import java.util.function.Consumer;
 
 @LuaWhitelist
 @LuaTypeDoc(name = "SillyAPI", value = "silly")
+@AutoPropertyWhitelist
 public class SillyAPI {
     public final Avatar avatar;
     public final Minecraft minecraft;
@@ -68,6 +72,9 @@ public class SillyAPI {
     public Set<SillyEnums.GUI_ELEMENT> disabledElements = new HashSet<>();
     public boolean fakeBlocksDisabled = false;
     public Set<UUID> customSubscriptions = new HashSet<>();
+
+    @AutoProperty public String meow = "test";
+    @AutoProperty @ReadOnly public String meow2 = "test2";
 
     public SillyAPI(Avatar avatar) {
         SillyPlugin.FakeBlocks.put(avatar.owner, new ConcurrentHashMap<>());
@@ -573,18 +580,59 @@ public class SillyAPI {
     }
 
     @LuaWhitelist
-    public void setVehicleVelocity(Object x, Float y, Float z) {
-        if (!local) return;
-        assert minecraft.player != null;
-        Entity vehicle = minecraft.player.getVehicle();
-        if (vehicle == null) return;
-        Vec3 current = vehicle.getDeltaMovement();
-        FiguraVec3 vel = LuaUtils.parseVec3("setVehicleVelocity", x, y, z, current.x, current.y, current.z);
-        if (isVectorOkay(vel))
-            cheatExecutor(plr -> {
-                vehicle.setDeltaMovement(vel.asVec3());
-            });
+    @LuaTypeDoc(name = "SillyVehicleAPI", value = "silly.vehicle")
+    public class SillyVehicleAPI {
+        SillyAPI parent;
+        public SillyVehicleAPI(SillyAPI parent) {
+            this.parent = parent;
+        }
+
+        @LuaWhitelist
+        public void setPos(Object x, Float y, Float z) {
+            if (!local) return;
+            assert minecraft.player != null;
+            Entity vehicle = minecraft.player.getVehicle();
+            if (vehicle == null) return;
+            Vec3 current = vehicle.position();
+            FiguraVec3 pos = LuaUtils.parseVec3("setPos", x, y, z, current.x, current.y, current.z);
+            if (isVectorOkay(pos))
+                cheatExecutor(plr -> {
+                    vehicle.setPos(pos.asVec3());
+                });
+        }
+
+        @LuaWhitelist
+        public void setRot(@LuaNotNil Object x, Float y) {
+            assert minecraft.player != null;
+            Entity vehicle = minecraft.player.getVehicle();
+            if (vehicle == null) return;
+            float cur_x = vehicle.getXRot();
+            float cur_y = vehicle.getYRot();
+            FiguraVec2 rot = LuaUtils.parseVec2("setRot", x, y, cur_x, cur_y);
+            if (!Double.isNaN(rot.x) && !Double.isNaN(rot.y))
+                cheatExecutor(plr -> {
+                    vehicle.setXRot((float)rot.x);
+                    vehicle.setYRot((float)rot.y);
+                });
+        }
+
+        @LuaWhitelist
+        public void setVelocity(Object x, Float y, Float z) {
+            if (!local) return;
+            assert minecraft.player != null;
+            Entity vehicle = minecraft.player.getVehicle();
+            if (vehicle == null) return;
+            Vec3 current = vehicle.getDeltaMovement();
+            FiguraVec3 vel = LuaUtils.parseVec3("setVelocity", x, y, z, current.x, current.y, current.z);
+            if (isVectorOkay(vel))
+                cheatExecutor(plr -> {
+                    vehicle.setDeltaMovement(vel.asVec3());
+                });
+        }
     }
+
+    @AutoProperty @ReadOnly public SillyVehicleAPI vehicle = new SillyVehicleAPI(this);
+
 
     @LuaWhitelist
     public SillyAPI setSubscribePings(String uuid, Boolean state) {
@@ -627,6 +675,8 @@ public class SillyAPI {
 
     // TODO: see if theres another way to do varargs using figura.
     //       this function explodes if the first vararg passed is nil...
+
+    // TODO: migrate this to an AutoProperty that is a ReadOnly varargs function
     @LuaWhitelist
     @LuaMethodDoc(
             value = "silly.ping",

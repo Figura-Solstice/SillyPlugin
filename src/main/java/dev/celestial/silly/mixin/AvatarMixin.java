@@ -5,17 +5,20 @@ import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.mojang.blaze3d.vertex.PoseStack;
 import dev.celestial.silly.helper.AutoProfile;
+import dev.celestial.silly.lua.BackportsAPI;
 import dev.celestial.silly.lua.SillyAPI;
 import dev.celestial.silly.lua.SillyProfiler;
-import dev.celestial.silly.not_a_mixin.AvatarAccessor;
+import dev.celestial.silly.not_a_mixin.AvatarExtensions;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
 import net.minecraft.world.entity.Entity;
 import org.figuramc.figura.avatar.Avatar;
+import org.figuramc.figura.lua.FiguraLuaRuntime;
 import org.figuramc.figura.model.rendering.PartFilterScheme;
 import org.jetbrains.annotations.Nullable;
 import org.luaj.vm2.Varargs;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -25,7 +28,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Mixin(value = Avatar.class, remap = false)
-public class AvatarMixin implements AvatarAccessor {
+public class AvatarMixin implements AvatarExtensions {
+    @Shadow
+    public FiguraLuaRuntime luaRuntime;
     @Unique
     public SillyAPI silly;
 
@@ -44,6 +49,8 @@ public class AvatarMixin implements AvatarAccessor {
     public SillyAPI silly$setSilly(SillyAPI instance) {
         silly = instance;
         silly$setUserData(SillyAPI.class, instance);
+        silly$setUserData(BackportsAPI.class, instance.backports);
+        ((RuntimeAccessor)instance.runtime).getGlobals().set("silly_backports", instance.runtime.typeManager.javaToLua(instance.backports).arg1());
         return silly;
     }
 
@@ -70,7 +77,7 @@ public class AvatarMixin implements AvatarAccessor {
 
     @WrapMethod(method = "render(F)V")
     public void silly$profileWorldRender(float delta, Operation<Void> original) {
-        SillyProfiler prf = ((AvatarAccessor)(Avatar)(Object)this).silly$getProfiler();
+        SillyProfiler prf = ((AvatarExtensions)(Avatar)(Object)this).silly$getProfiler();
         if (prf == null) {
             original.call(delta);
             return;
@@ -98,7 +105,7 @@ public class AvatarMixin implements AvatarAccessor {
 
     @WrapMethod(method = "tickEvent")
     public void tickWrap(Operation<Void> original) {
-        SillyProfiler prf = ((AvatarAccessor)(Avatar)(Object)this).silly$getProfiler();
+        SillyProfiler prf = ((AvatarExtensions)(Avatar)(Object)this).silly$getProfiler();
         if (prf == null) {
             original.call();
             return;
@@ -110,7 +117,7 @@ public class AvatarMixin implements AvatarAccessor {
 
     @WrapOperation(method = "tick", at = @At(value = "INVOKE", target = "Lorg/figuramc/figura/avatar/Avatar;run(Ljava/lang/Object;Lorg/figuramc/figura/avatar/Avatar$Instructions;[Ljava/lang/Object;)Lorg/luaj/vm2/Varargs;"))
     public Varargs silly$profileWorldTick(Avatar instance, Object toRun, Avatar.Instructions limit, Object[] args, Operation<Varargs> original) {
-        SillyProfiler prf = ((AvatarAccessor)(Avatar)(Object)this).silly$getProfiler();
+        SillyProfiler prf = ((AvatarExtensions)(Avatar)(Object)this).silly$getProfiler();
         if (prf == null) {
             original.call(instance, toRun, limit, args);
             return null;

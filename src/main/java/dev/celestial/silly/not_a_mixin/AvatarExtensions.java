@@ -3,7 +3,7 @@ package dev.celestial.silly.not_a_mixin;
 import dev.celestial.silly.lua.SillyAPI;
 import dev.celestial.silly.lua.SillyProfiler;
 
-public interface AvatarAccessor {
+public interface AvatarExtensions {
     SillyAPI silly$getSilly();
     SillyAPI silly$setSilly(SillyAPI instance);
     Object silly$setUserData(Class<?> clazz, Object instance);

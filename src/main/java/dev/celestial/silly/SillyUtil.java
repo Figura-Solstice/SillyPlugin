@@ -3,13 +3,9 @@ package dev.celestial.silly;
 import com.mojang.authlib.GameProfile;
 import dev.celestial.silly.lua.SillyAPI;
 import dev.celestial.silly.mixin.MinecraftAccessor;
-import dev.celestial.silly.not_a_mixin.AvatarAccessor;
+import dev.celestial.silly.not_a_mixin.AvatarExtensions;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.client.player.AbstractClientPlayer;
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
-import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
 import net.minecraft.server.Services;
 import net.minecraft.world.entity.player.Player;
 import org.figuramc.figura.avatar.Avatar;
@@ -17,7 +13,6 @@ import org.figuramc.figura.avatar.AvatarManager;
 import org.luaj.vm2.LuaError;
 import org.luaj.vm2.LuaTable;
 import org.luaj.vm2.LuaValue;
-import org.spongepowered.asm.mixin.Unique;
 
 import java.util.List;
 import java.util.Optional;
@@ -27,6 +22,16 @@ public class SillyUtil {
     public static final boolean DEV_MODE = false;
     private static Services services;
     public static Avatar getAvatar(String username) {
+        UUID uuid = getUUID(username);
+
+        if (uuid == null) {
+            return null;
+        }
+
+        return AvatarManager.getAvatarForPlayer(uuid);
+    }
+
+    public static UUID getUUID(String username) {
         Minecraft mc = Minecraft.getInstance();
         if (SillyUtil.services == null) {
             SillyUtil.services = Services.create(((MinecraftAccessor)mc).silly$getAuthenticationService(), mc.gameDirectory);
@@ -52,14 +57,8 @@ public class SillyUtil {
                     uuid = profile.get().getId();
             }
         }
-
-        if (uuid == null) {
-            return null;
-        }
-
-        return AvatarManager.getAvatarForPlayer(uuid);
+        return uuid;
     }
-
 
     private static Class<?> roltClass;
     public static LuaTable createReadOnlyLuaTable(LuaTable tbl) {
@@ -93,7 +92,7 @@ public class SillyUtil {
     }
 
     public static boolean canCheat(Avatar avatar) {
-        SillyAPI api = ((AvatarAccessor)avatar).silly$getSilly();
+        SillyAPI api = ((AvatarExtensions)avatar).silly$getSilly();
         return canCheat(api);
     }
 

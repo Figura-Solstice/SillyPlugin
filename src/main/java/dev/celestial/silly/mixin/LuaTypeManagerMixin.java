@@ -7,19 +7,15 @@ import dev.celestial.silly.annotations.AutoProperty;
 import dev.celestial.silly.annotations.AutoPropertyWhitelist;
 import dev.celestial.silly.annotations.ReadOnly;
 import dev.celestial.silly.lua.BackportsAPI;
-import dev.celestial.silly.not_a_mixin.AvatarAccessor;
-import net.minecraft.network.chat.Component;
+import dev.celestial.silly.not_a_mixin.AvatarExtensions;
 import org.figuramc.figura.avatar.AvatarManager;
-import org.figuramc.figura.lua.FiguraLuaPrinter;
 import org.figuramc.figura.lua.LuaTypeManager;
-import org.luaj.vm2.LuaFunction;
 import org.luaj.vm2.LuaTable;
 import org.luaj.vm2.LuaValue;
 import org.luaj.vm2.Varargs;
 import org.luaj.vm2.lib.OneArgFunction;
 import org.luaj.vm2.lib.ThreeArgFunction;
 import org.luaj.vm2.lib.TwoArgFunction;
-import org.luaj.vm2.lib.ZeroArgFunction;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -107,7 +103,7 @@ public abstract class LuaTypeManagerMixin {
                 var owner = caller.getLeft();
                 var avatar = AvatarManager.getAvatarForPlayer(owner);
                 if (avatar == null) return LuaValue.NIL;
-                var instance = ((AvatarAccessor)avatar).silly$getUserData(clazz);
+                var instance = ((AvatarExtensions)avatar).silly$getUserData(clazz);
 
                 return func.checkfunction().call(javaToLua(instance).arg1());
             }
@@ -124,7 +120,7 @@ public abstract class LuaTypeManagerMixin {
                 var owner = caller.getLeft();
                 var avatar = AvatarManager.getAvatarForPlayer(owner);
                 if (avatar == null) return LuaValue.NIL;
-                var instance = ((AvatarAccessor)avatar).silly$getUserData(clazz);
+                var instance = ((AvatarExtensions)avatar).silly$getUserData(clazz);
                 var userdata = javaToLua(instance).arg1();
 
                 set.checkfunction().call(userdata, arg3);

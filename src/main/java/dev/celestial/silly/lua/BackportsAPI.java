@@ -2,6 +2,9 @@ package dev.celestial.silly.lua;
 
 import com.llamalad7.mixinextras.lib.apache.commons.tuple.Pair;
 import dev.celestial.silly.SillyUtil;
+import dev.celestial.silly.annotations.AutoProperty;
+import dev.celestial.silly.annotations.AutoPropertyWhitelist;
+import dev.celestial.silly.annotations.ReadOnly;
 import dev.celestial.silly.helper.CallerContext;
 import dev.celestial.silly.SillyPlugin;
 import dev.celestial.silly.helper.CyclicalDeque;
@@ -12,6 +15,8 @@ import org.figuramc.figura.gui.FiguraToast;
 import org.figuramc.figura.lua.FiguraLuaRuntime;
 import org.figuramc.figura.lua.LuaNotNil;
 import org.figuramc.figura.lua.LuaWhitelist;
+import org.figuramc.figura.lua.api.event.LuaEvent;
+import org.figuramc.figura.lua.docs.LuaFieldDoc;
 import org.figuramc.figura.lua.docs.LuaMethodDoc;
 import org.figuramc.figura.lua.docs.LuaMethodOverload;
 import org.figuramc.figura.lua.docs.LuaTypeDoc;
@@ -25,6 +30,7 @@ import java.util.*;
 
 @LuaWhitelist
 @LuaTypeDoc(name = "BackportsAPI", value = "silly_backports")
+@AutoPropertyWhitelist
 public class BackportsAPI {
     public Avatar owner;
     public FiguraLuaRuntime runtime;
@@ -38,6 +44,9 @@ public class BackportsAPI {
     public static CallerContext openCallerContext(UUID uuid, String context) {
         return CallerContext.Open(uuid, context);
     }
+
+    @LuaFieldDoc("silly_backports.pre_render")
+    @AutoProperty @ReadOnly public LuaEvent PRE_RENDER = new LuaEvent();
 
     public static void pushStack(UUID uuid, String context) {
         if (SillyUtil.DEV_MODE)

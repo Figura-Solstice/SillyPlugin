@@ -27,6 +27,11 @@ public class EventsAPIMixin implements EventsAccessor {
     @LuaFieldDoc("events.gui_render")
     public LuaEvent GUI_RENDER;
 
+//    @Unique
+//    @LuaWhitelist
+//    @LuaFieldDoc("events.move")
+//    public LuaEvent MOVE;
+
     @Shadow
     @Final
     private Map<String, LuaEvent> events;

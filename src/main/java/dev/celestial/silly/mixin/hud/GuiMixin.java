@@ -56,7 +56,11 @@ public class GuiMixin {
                 Avatar avatar = entity == null ? null : AvatarManager.getAvatar(entity);
                 if (avatar != null && avatar.luaRuntime != null) {
                     LuaGraphics lg = new LuaGraphics(guiGraphics);
-                    avatar.run("GUI_RENDER", avatar.render, lg);
+                    //? if >=1.21 {
+                    /*avatar.run("GUI_RENDER", avatar.render, lg, deltaTracker.getGameTimeDeltaTicks());
+                    *///?} else {
+                    avatar.run("GUI_RENDER", avatar.render, lg, f);
+                     //?}
                     lg.exit();
                 }
 
@@ -66,18 +70,22 @@ public class GuiMixin {
         }
         //? if >=1.21 {
         /*original.call(guiGraphics, deltaTracker);
-         *///?} else {
+        *///?} else {
         original.call(guiGraphics, f);
+        //?}
         if (!AvatarManager.panic) {
             Entity entity = Minecraft.getInstance().getCameraEntity();
             Avatar avatar = entity == null ? null : AvatarManager.getAvatar(entity);
             if (avatar != null && avatar.luaRuntime != null) {
                 LuaGraphics lg = new LuaGraphics(guiGraphics);
-                avatar.run("GUI_RENDER", avatar.tick, lg);
+                //? if >=1.21 {
+                /*avatar.run("GUI_RENDER", avatar.render, lg, deltaTracker.getGameTimeDeltaTicks());
+                *///?} else {
+                avatar.run("GUI_RENDER", avatar.render, lg, f);
+                 //?}
                 lg.exit();
             }
         }
-        //?}
     }
 
     //? if >=1.21 {

@@ -4,6 +4,9 @@ import com.llamalad7.mixinextras.lib.apache.commons.tuple.Pair;
 import dev.celestial.silly.SillyUtil;
 import dev.celestial.silly.helper.CyclicalDeque;
 import org.figuramc.figura.lua.LuaWhitelist;
+import org.figuramc.figura.lua.docs.LuaMethodDoc;
+import org.figuramc.figura.lua.docs.LuaMethodOverload;
+import org.figuramc.figura.lua.docs.LuaTypeDoc;
 import org.luaj.vm2.LuaTable;
 import org.luaj.vm2.LuaValue;
 
@@ -11,6 +14,7 @@ import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
 
 @LuaWhitelist
+@LuaTypeDoc(name = "SillyProfiler", value = "silly_profiler")
 public class SillyProfiler {
     public CyclicalDeque<Pair<Long, Long>> lastTickEventTimes = new CyclicalDeque<>(60);
     public CyclicalDeque<Pair<Long, Long>> lastRenderEventTimes = new CyclicalDeque<>(60);
@@ -36,6 +40,21 @@ public class SillyProfiler {
 
     // { [string]: long[60] (nanos) }
     @LuaWhitelist
+    @LuaMethodDoc(
+            value = "silly_profiler.get_times",
+            overloads = {
+                    @LuaMethodOverload(
+                            argumentNames = { "onlyLast" },
+                            argumentTypes = { Boolean.class },
+                            returnType = LuaTable.class
+                    ),
+                    @LuaMethodOverload(
+                            argumentTypes = {},
+                            argumentNames = {},
+                            returnType = LuaTable.class
+                    )
+            }
+    )
     public LuaTable getTimes(Boolean onlyLast) {
         LuaTable table = new LuaTable();
         if (onlyLast) {
@@ -56,28 +75,78 @@ public class SillyProfiler {
 
     // long[60] (nanos)
     @LuaWhitelist
+    @LuaMethodDoc(
+            value = "silly_profiler.get_tick_times",
+            overloads = {
+                    @LuaMethodOverload(
+                            argumentTypes = {},
+                            argumentNames = {},
+                            returnType = LuaTable.class
+                    )
+            }
+    )
     public LuaTable getTickTimes() {
         return getData(lastTickEventTimes);
     }
 
     // long[60] (nanos)
     @LuaWhitelist
+    @LuaMethodDoc(
+            value = "silly_profiler.get_render_event_times",
+            overloads = {
+                    @LuaMethodOverload(
+                            argumentTypes = {},
+                            argumentNames = {},
+                            returnType = LuaTable.class
+                    )
+            }
+    )
     public LuaTable getRenderEventTimes() {
         return getData(lastRenderEventTimes);
     }
 
     // long[60] (nanos)
     @LuaWhitelist
+    @LuaMethodDoc(
+            value = "silly_profiler.get_render_times",
+            overloads = {
+                    @LuaMethodOverload(
+                            argumentTypes = {},
+                            argumentNames = {},
+                            returnType = LuaTable.class
+                    )
+            }
+    )
     public LuaTable getRenderTimes() {
         return getData(lastRenderTimes);
     }
 
     @LuaWhitelist
+    @LuaMethodDoc(
+            value = "silly_profiler.get_world_tick_times",
+            overloads = {
+                    @LuaMethodOverload(
+                            argumentTypes = {},
+                            argumentNames = {},
+                            returnType = LuaTable.class
+                    )
+            }
+    )
     public LuaTable getWorldTickTimes() {
         return getData(lastWorldTickTimes);
     }
 
     @LuaWhitelist
+    @LuaMethodDoc(
+            value = "silly_profiler.get_world_render_times",
+            overloads = {
+                    @LuaMethodOverload(
+                            argumentTypes = {},
+                            argumentNames = {},
+                            returnType = LuaTable.class
+                    )
+            }
+    )
     public LuaTable getWorldRenderTimes() {
         return getData(lastWorldRenderTimes);
     }

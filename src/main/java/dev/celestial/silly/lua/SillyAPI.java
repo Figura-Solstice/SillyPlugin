@@ -1,5 +1,6 @@
 package dev.celestial.silly.lua;
 
+import dev.celestial.silly.annotations.Alias;
 import dev.celestial.silly.annotations.AutoProperty;
 import dev.celestial.silly.annotations.AutoPropertyWhitelist;
 import dev.celestial.silly.annotations.ReadOnly;
@@ -7,8 +8,9 @@ import dev.celestial.silly.helper.Overridable;
 import dev.celestial.silly.SillyEnums;
 import dev.celestial.silly.SillyPlugin;
 import dev.celestial.silly.SillyUtil;
+import dev.celestial.silly.mixin.AvatarAccessor;
 import dev.celestial.silly.mixin.LuaScriptParserInvokers;
-import dev.celestial.silly.not_a_mixin.AvatarAccessor;
+import dev.celestial.silly.not_a_mixin.AvatarExtensions;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -17,6 +19,8 @@ import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Abilities;
 import net.minecraft.world.entity.player.Player;
@@ -38,6 +42,7 @@ import org.figuramc.figura.lua.api.ping.PingArg;
 import org.figuramc.figura.lua.api.ping.PingFunction;
 import org.figuramc.figura.lua.api.world.BlockStateAPI;
 import org.figuramc.figura.lua.api.world.WorldAPI;
+import org.figuramc.figura.lua.docs.LuaFieldDoc;
 import org.figuramc.figura.lua.docs.LuaMethodDoc;
 import org.figuramc.figura.lua.docs.LuaMethodOverload;
 import org.figuramc.figura.lua.docs.LuaTypeDoc;
@@ -45,9 +50,13 @@ import org.figuramc.figura.math.matrix.FiguraMat4;
 import org.figuramc.figura.math.vector.FiguraVec2;
 import org.figuramc.figura.math.vector.FiguraVec3;
 import org.figuramc.figura.parsers.LuaScriptParser;
+import org.figuramc.figura.permissions.PermissionManager;
+import org.figuramc.figura.permissions.PermissionPack;
+import org.figuramc.figura.permissions.Permissions;
 import org.figuramc.figura.utils.EntityUtils;
 import org.figuramc.figura.utils.LuaUtils;
 import org.luaj.vm2.*;
+import org.luaj.vm2.lib.VarArgFunction;
 
 import java.nio.file.Path;
 import java.util.*;
@@ -61,6 +70,7 @@ import java.util.function.Consumer;
 public class SillyAPI {
     public final Avatar avatar;
     public final Minecraft minecraft;
+    public final FiguraLuaRuntime runtime;
     public Overridable<Boolean> mayFly = new Overridable<>();
     public Overridable<Boolean> gravity = new Overridable<>();
     public Overridable<Boolean> friction = new Overridable<>();
@@ -73,24 +83,23 @@ public class SillyAPI {
     public boolean fakeBlocksDisabled = false;
     public Set<UUID> customSubscriptions = new HashSet<>();
 
-    @AutoProperty public String meow = "test";
-    @AutoProperty @ReadOnly public String meow2 = "test2";
-
-    public SillyAPI(Avatar avatar) {
+    public SillyAPI(FiguraLuaRuntime runtime) {
+        this.avatar = runtime.owner;
+        this.runtime = runtime;
         SillyPlugin.FakeBlocks.put(avatar.owner, new ConcurrentHashMap<>());
         SillyPlugin.markFakesDirty();
-        this.avatar = avatar;
         this.minecraft = Minecraft.getInstance();
+        this.backports = new BackportsAPI(runtime);
         local = avatar.isHost;
-        ((AvatarAccessor)avatar).silly$setProfiler(new SillyProfiler());
+        ((AvatarExtensions)avatar).silly$setProfiler(profiler);
         if (local) SillyPlugin.hostInstance = this;
     }
 
-    public SillyAPI(FiguraLuaRuntime runtime) {
-        this(runtime.owner);
-    }
+    @LuaFieldDoc("silly.profiler")
+    @AutoProperty @ReadOnly public SillyProfiler profiler = new SillyProfiler();
 
-
+    @LuaFieldDoc("silly.backports")
+    @AutoProperty @ReadOnly public BackportsAPI backports;
 
     public void onPanic(boolean panic) {
         if (!local) return;
@@ -170,6 +179,25 @@ public class SillyAPI {
     }
 
     @LuaWhitelist
+    @LuaMethodDoc(
+            value = "silly.get_error",
+            overloads = {
+                    @LuaMethodOverload(
+                            argumentNames = { "name" },
+                            argumentTypes = { String.class },
+                            returnType = Component.class
+                    )
+            }
+    )
+    public Component getError(@LuaNotNil String name) {
+        Avatar avatar = SillyUtil.getAvatar(name);
+        if (avatar == null) return null;
+        if (avatar.scriptError)
+            return avatar.errorText;
+        return null;
+    }
+
+    @LuaWhitelist
     @LuaMethodDoc(value = "silly.get_figura_debug_string")
     public String getFiguraDebugString() {
         // taken from that one mixin in figura
@@ -236,6 +264,14 @@ public class SillyAPI {
     }
 
     @LuaWhitelist
+    @LuaMethodDoc(value = "silly.set_gui_matrix",
+    overloads = {
+            @LuaMethodOverload(
+                    argumentNames = { "mat" },
+                    argumentTypes = { FiguraMat4.class },
+                    returnType = SillyAPI.class
+            )
+    })
     public SillyAPI setGuiMatrix(FiguraMat4 mat) {
         if (mat == null) {
             guiMat.setValue(null);
@@ -284,13 +320,125 @@ public class SillyAPI {
     }
 
     @LuaWhitelist
-    @LuaMethodDoc(value = "silly.get_permissions")
-    public LuaTable getPermissions() {
-        LuaTable table = new LuaTable();
-        table.set("FAKE_BLOCKS", LuaValue.valueOf(avatar.permissions.get(SillyPlugin.FAKE_BLOCKS) != 0));
-        table.set("SCRIPT_EXEC", LuaValue.valueOf(avatar.permissions.get(SillyPlugin.SCRIPT_EXEC)));
-        return table;
+    @LuaMethodDoc(value = "silly.get_permissions",
+        overloads = {
+                @LuaMethodOverload(
+                        argumentNames = { "name" },
+                        argumentTypes = { String.class },
+                        returnType = LuaTable.class
+                ),
+                @LuaMethodOverload(returnType = LuaTable.class)
+        }
+    )
+    public LuaTable getPermissions(String name) {
+        name = name == null ? avatar.owner.toString() : name;
+        Avatar avatar = SillyUtil.getAvatar(name);
+        if (avatar == null) return null;
+        LuaTable ret = new LuaTable();
+        PermissionPack pack = avatar.permissions;
+        for (var perm : Permissions.DEFAULT) {
+            if (perm.isToggle)
+                ret.set("figura:" + perm.name.toLowerCase(Locale.ROOT), pack.get(perm) != 0 ? LuaValue.TRUE : LuaValue.FALSE);
+            else
+                ret.set("figura:" + perm.name.toLowerCase(Locale.ROOT), pack.get(perm));
+        }
+        for (var perms : PermissionManager.CUSTOM_PERMISSIONS.entrySet()) {
+            String id = perms.getKey();
+            for (var perm : perms.getValue()) {
+                String key = id.toLowerCase(Locale.ROOT) + ":" + perm.name.toLowerCase(Locale.ROOT);
+                if (perm.isToggle)
+                    ret.set(key, pack.get(perm) != 0 ? LuaValue.TRUE : LuaValue.FALSE);
+                else
+                    ret.set(key, pack.get(perm));
+            }
+        }
+        return ret;
     }
+
+    @LuaWhitelist
+    public void setPermission(@LuaNotNil String name, @LuaNotNil String permissionKey, Object value) {
+        if (!local) return;
+//        Avatar avatar = SillyUtil.getAvatar(name);
+//        if (avatar == null) return;
+        String namespace = "figura";
+        if (permissionKey.contains(":")) {
+            ResourceLocation awa = ResourceLocation.tryParse(permissionKey);
+            if (awa != null) {
+                namespace = awa.getNamespace();
+                permissionKey = awa.getPath();
+            } else throw new LuaError("Invalid permission key: " + permissionKey);
+        }
+        namespace = namespace.toLowerCase(Locale.ROOT);
+        PermissionPack pack = PermissionManager.get(SillyUtil.getUUID(name));
+
+        if (namespace.equals("figura")) {
+            for (var perm : Permissions.DEFAULT) {
+                if (Objects.equals(perm.name.toUpperCase(), permissionKey.toUpperCase())) {
+                    checkPerm(pack, perm, permissionKey, value, FiguraMod.MOD_ID);
+                    return;
+                }
+            }
+        } else {
+            var perms = PermissionManager.CUSTOM_PERMISSIONS.get(namespace);
+            if (perms == null) throw new LuaError("Unknown namespace: " + namespace);
+            for (var perm : perms) {
+                if (Objects.equals(perm.name.toUpperCase(), permissionKey.toUpperCase())) {
+                    checkPerm(pack, perm, permissionKey, value, namespace);
+                    return;
+                }
+            }
+        }
+
+        throw new LuaError("Permission " + permissionKey + " not found!");
+    }
+
+    @LuaWhitelist
+    public void setPermissionCategory(@LuaNotNil String name, String category) {
+        if (!local) return;
+        Avatar avatar = SillyUtil.getAvatar(name);
+        if (avatar == null) return;
+        Permissions.Category cat = PermissionManager.getDefaultCategory();
+        if (category != null) {
+            try {
+                cat = Permissions.Category.valueOf(category.toUpperCase(Locale.ROOT));
+            } catch (IllegalArgumentException e) {
+                throw new LuaError("Unknown category: " + category);
+            }
+        }
+
+        avatar.permissions.setCategory(PermissionManager.CATEGORIES.getOrDefault(cat, new PermissionPack.CategoryPermissionPack(cat)));
+    }
+
+    private void checkPerm(PermissionPack pack, Permissions perm, String permissionKey, Object value, String id) {
+        if (value == null) {
+            pack.reset(perm);
+            return;
+        }
+        if (perm.isToggle) {
+            if (value instanceof Integer num) {
+                value = num != 0;
+            }
+            if (value instanceof Boolean bl) {
+                pack.insert(perm, bl ? 1 : 0, id);
+            } else {
+                throw new LuaError("Expected value to a boolean permission to be a boolean!");
+            }
+        } else {
+            if (value instanceof Integer num) {
+                pack.insert(perm, num, id);
+            } else {
+                throw new LuaError("Expected value to a number permission to be a number!");
+            }
+        }
+    }
+
+    @LuaWhitelist
+    @LuaMethodDoc("silly.update_avatar_size")
+    public void updateAvatarSize() {
+        avatar.fileSize = ((AvatarAccessor)avatar).silly$getFileSize();
+    }
+
+
 
     @LuaWhitelist
     @LuaMethodDoc("silly.cat")
@@ -360,12 +508,14 @@ public class SillyAPI {
     }
 
     @LuaWhitelist
+    @Alias
     public SillyAPI setRenderHudElement(@LuaNotNil Object element, Boolean state) {
         return setHudElementVisible(element, state);
     }
 
     // cosmic your oopsie is now canon
     @LuaWhitelist
+    @Alias
     public SillyAPI setHudElementDisabled(@LuaNotNil Object element, Boolean state) {
         return setHudElementVisible(element, !state);
     }
@@ -547,15 +697,43 @@ public class SillyAPI {
     }
 
     @LuaWhitelist
+    @LuaMethodDoc(
+            value = "silly.get_profiler",
+            overloads = {
+                    @LuaMethodOverload(
+                            argumentNames = { "name" },
+                            argumentTypes = { String.class },
+                            returnType = SillyProfiler.class
+                    ),
+                    @LuaMethodOverload(
+                            returnType = SillyProfiler.class
+                    )
+            }
+    )
     public SillyProfiler getProfiler(String name) {
-        if (name == null) return ((AvatarAccessor)avatar).silly$getProfiler();
+        if (name == null) return ((AvatarExtensions)avatar).silly$getProfiler();
         Avatar other = SillyUtil.getAvatar(name);
         if (other == null)
             return null;
-        return ((AvatarAccessor)other).silly$getProfiler();
+        return ((AvatarExtensions)other).silly$getProfiler();
     }
 
     @LuaWhitelist
+    @LuaMethodDoc(
+            value = "silly.format_script",
+            overloads = {
+                    @LuaMethodOverload(
+                            argumentNames = { "script", "level" },
+                            argumentTypes = { String.class, String.class },
+                            returnType = String.class
+                    ),
+                    @LuaMethodOverload(
+                            argumentNames = { "script" },
+                            argumentTypes = { String.class },
+                            returnType = String.class
+                    )
+            }
+    )
     public String formatScript(@LuaNotNil String script, String level) {
         if (level == null) {
             level = switch(Configs.FORMAT_SCRIPT.value) {
@@ -588,6 +766,19 @@ public class SillyAPI {
         }
 
         @LuaWhitelist
+        @LuaMethodDoc(
+                value = "silly.vehicle.set_pos",
+                overloads = {
+                        @LuaMethodOverload(
+                                argumentTypes = {FiguraVec3.class},
+                                argumentNames = {"pos"}
+                        ),
+                        @LuaMethodOverload(
+                                argumentTypes = { Float.class, Float.class, Float.class },
+                                argumentNames = {"x","y","z"}
+                        )
+                }
+        )
         public void setPos(Object x, Float y, Float z) {
             if (!local) return;
             assert minecraft.player != null;
@@ -601,7 +792,21 @@ public class SillyAPI {
                 });
         }
 
+
         @LuaWhitelist
+        @LuaMethodDoc(
+                value = "silly.vehicle.set_rot",
+                overloads = {
+                        @LuaMethodOverload(
+                                argumentTypes = {FiguraVec2.class},
+                                argumentNames = {"rot"}
+                        ),
+                        @LuaMethodOverload(
+                                argumentTypes = { Float.class, Float.class },
+                                argumentNames = {"x","y"}
+                        )
+                }
+        )
         public void setRot(@LuaNotNil Object x, Float y) {
             assert minecraft.player != null;
             Entity vehicle = minecraft.player.getVehicle();
@@ -617,6 +822,26 @@ public class SillyAPI {
         }
 
         @LuaWhitelist
+        @Alias
+        public void setVel(Object x, Float y, Float z) {
+            setVelocity(x,y,z);
+        }
+
+        @LuaWhitelist
+        @LuaMethodDoc(
+                value = "silly.vehicle.set_velocity",
+                overloads = {
+                        @LuaMethodOverload(
+                                argumentTypes = {FiguraVec3.class},
+                                argumentNames = {"velocity"}
+                        ),
+                        @LuaMethodOverload(
+                                argumentTypes = { Float.class, Float.class, Float.class },
+                                argumentNames = {"x","y","z"}
+                        )
+                },
+                aliases = {"setVel"}
+        )
         public void setVelocity(Object x, Float y, Float z) {
             if (!local) return;
             assert minecraft.player != null;
@@ -631,10 +856,21 @@ public class SillyAPI {
         }
     }
 
+    @LuaFieldDoc("silly.vehicle_field")
     @AutoProperty @ReadOnly public SillyVehicleAPI vehicle = new SillyVehicleAPI(this);
 
 
     @LuaWhitelist
+    @LuaMethodDoc(
+            value = "silly.set_subscribe_pings",
+            overloads = {
+                    @LuaMethodOverload(
+                            argumentNames = { "uuid", "state" },
+                            argumentTypes = { String.class, Boolean.class },
+                            returnType = SillyAPI.class
+                    )
+            }
+    )
     public SillyAPI setSubscribePings(String uuid, Boolean state) {
         if (!local) return this;
         try {
@@ -651,6 +887,7 @@ public class SillyAPI {
     }
 
     @LuaWhitelist
+    @Alias
     public SillyAPI setBlocksEnabled(Boolean state) {
         return setFakeBlocksEnabled(state);
     }
@@ -673,41 +910,28 @@ public class SillyAPI {
         return this;
     }
 
-    // TODO: see if theres another way to do varargs using figura.
-    //       this function explodes if the first vararg passed is nil...
-
-    // TODO: migrate this to an AutoProperty that is a ReadOnly varargs function
     @LuaWhitelist
-    @LuaMethodDoc(
-            value = "silly.ping",
-            overloads = {
-                    @LuaMethodOverload(
-                        // TODO: is varargs right?
-                        argumentTypes = { String.class, Varargs.class },
-                        argumentNames = { "pingFunc", "args" },
-                        returnType = SillyAPI.class
-                    )
-            }
-    )
-    public SillyAPI ping(String pingFunc, Object... args) {
-        if (!local) return this;
-        PingFunction pong = avatar.luaRuntime.ping.get(pingFunc);
-        if (pong == null) throw new LuaError("Ping " + pingFunc + " not found!");
-        List<LuaValue> lvlist = new ArrayList<>();
-        Arrays.stream(args).forEach(v -> lvlist.add((LuaValue) avatar.luaRuntime.typeManager.javaToLua(v)));
-        LuaValue[] largs = lvlist.toArray(new LuaValue[0]);
-        Varargs vargs = LuaValue.varargsOf(largs);
-
-        boolean sync = Configs.SYNC_PINGS.value;
-        byte[] data = new PingArg(vargs).toByteArray();
-        int id = (pingFunc.hashCode() + 1) * 31;
-        boolean isLocal = AvatarManager.localUploaded;
-        AvatarManager.localUploaded = true;
-        NetworkStuff.sendPing(id, sync, data);
-        AvatarManager.localUploaded = isLocal;
-        if (!sync) avatar.runPing(id, data);
-        return this;
-    }
+    @LuaFieldDoc(value = "silly.ping")
+    @AutoProperty @ReadOnly
+    public VarArgFunction ping = new VarArgFunction() {
+        @Override
+        public Varargs invoke(Varargs args) {
+            Varargs siypugi = runtime.typeManager.javaToLua(SillyAPI.this);
+            if (!local) return siypugi;
+            args.arg1().checkuserdata(SillyAPI.class);
+            String pingFunc = args.arg(2).checkjstring();
+            Varargs actualArgs = args.subargs(3);
+            boolean sync = Configs.SYNC_PINGS.value;
+            byte[] data = new PingArg(actualArgs).toByteArray();
+            int id = (pingFunc.hashCode() + 1) * 31;
+            boolean isLocal = AvatarManager.localUploaded;
+            AvatarManager.localUploaded = true;
+            NetworkStuff.sendPing(id, sync, data);
+            AvatarManager.localUploaded = isLocal;
+            if (!sync) avatar.runPing(id, data);
+            return siypugi;
+        }
+    };
 
     @LuaWhitelist
     @LuaMethodDoc(
@@ -740,6 +964,7 @@ public class SillyAPI {
     }
 
     @LuaWhitelist
+    @Alias
     public LuaTable getBlockInfo(Object x, Double y, Double z) {
         return getFakeBlockInfo(x,y,z);
     }
@@ -768,6 +993,7 @@ public class SillyAPI {
 
     // alias for backwards compat with goofy
     @LuaWhitelist
+    @Alias
     public void setCanFly(Boolean canFly) {
         setFly(canFly);
     }
@@ -787,15 +1013,32 @@ public class SillyAPI {
                     @LuaMethodOverload(
                             argumentTypes = { Float.class, Float.class, Float.class },
                             argumentNames = {"x","y","z"}
+                    ),
+                    @LuaMethodOverload(
+                            argumentTypes = { Float.class, Float.class, Float.class, Boolean.class },
+                            argumentNames = {"x","y","z","sendPacket"}
                     )
             }
     )
-    public void setPos(@LuaNotNil Object x, Float y, Float z) {
+    public void setPos(@LuaNotNil Object x, Float y, Float z, Boolean sendPacket) {
         assert minecraft.player != null;
         Vec3 cur = minecraft.player.position();
+        final Boolean sendPacketForReal = sendPacket != null && sendPacket;
         FiguraVec3 pos = LuaUtils.parseVec3("setPos", x, y, z, cur.x, cur.y, cur.z);
         if (isVectorOkay(pos))
-            cheatExecutor(plr -> plr.setPos(pos.asVec3()));
+            cheatExecutor(plr -> {
+                if (sendPacketForReal) {
+                    ClientPacketListener conn = minecraft.getConnection();
+                    if (conn != null) {
+                        //? if >=1.21.4 {
+                        /*conn.send(new ServerboundMovePlayerPacket.Pos(pos.x,pos.y,pos.z,plr.onGround(),plr.horizontalCollision));
+                        *///?} else {
+                        conn.send(new ServerboundMovePlayerPacket.Pos(pos.x,pos.y,pos.z,plr.onGround()));
+                         //?}
+                    }
+                } else
+                    plr.setPos(pos.asVec3());
+            });
     }
 
     @LuaWhitelist
@@ -822,6 +1065,7 @@ public class SillyAPI {
     }
 
     @LuaWhitelist
+    @Alias
     public void setVel(@LuaNotNil Object x, Float y, Float z) {
         setVelocity(x,y,z);
     }

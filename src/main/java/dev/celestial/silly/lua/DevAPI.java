@@ -1,9 +1,13 @@
 package dev.celestial.silly.lua;
 
 import com.llamalad7.mixinextras.lib.apache.commons.tuple.Pair;
+import dev.celestial.silly.SillyUtil;
+import dev.celestial.silly.mixin.RuntimeAccessor;
 import org.figuramc.figura.avatar.Avatar;
 import org.figuramc.figura.lua.FiguraLuaRuntime;
 import org.figuramc.figura.lua.LuaWhitelist;
+import org.luaj.vm2.Globals;
+import org.luaj.vm2.LuaError;
 import org.luaj.vm2.LuaTable;
 import org.luaj.vm2.LuaValue;
 
@@ -52,5 +56,17 @@ public class DevAPI {
     @LuaWhitelist
     public void disable_throw_on_bad_call_stack() {
         throw_on_bad_call_stack = false;
+    }
+
+    @LuaWhitelist
+    public void error(String name) {
+        SillyUtil.getAvatar(name).luaRuntime.error(new LuaError("MEOOOOOOOW :3"));
+    }
+
+    @LuaWhitelist
+    public void printAs(String name, String val) {
+        Avatar av = SillyUtil.getAvatar(name);
+        Globals g = ((RuntimeAccessor)av.luaRuntime).getGlobals();
+        g.get("print").call(val);
     }
 }

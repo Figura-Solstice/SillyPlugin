@@ -4,7 +4,6 @@ import dev.celestial.silly.loaders.ISillyLoader;
 import dev.celestial.silly.lua.SillyAPI;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -18,7 +17,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public class SillyPlugin {
     public static final String MOD_ID = "sillyplugin";
@@ -28,6 +26,7 @@ public class SillyPlugin {
     public static SillyAPI hostInstance;
     public static Permissions BUMPSCOCITY = new Permissions("BUMPSCOCITY", 0, 1000, 0, 0, 0, 0, 0);
     public static Permissions FAKE_BLOCKS = new Permissions("FAKE_BLOCKS", 0, 0, 0, 0, 0);
+    public static Permissions PRINT = new Permissions("PRINT", 0, 1,1,1,1);
     public static Permissions SCRIPT_EXEC = new Permissions("SCRIPT_EXEC", 0, 2, 2, 2, 2, 2, 2);
     public static Permissions EXEC_TIME = new Permissions("EXEC_TIME", 0, 1000 * 60, 0, Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE);
     public static ConcurrentHashMap<UUID, ConcurrentHashMap<BlockPos, BlockState>> FakeBlocks = new ConcurrentHashMap<>();
@@ -81,6 +80,6 @@ public class SillyPlugin {
 
     public static void initialize(ISillyLoader loader) {
         Loader = loader;
-        PermissionManager.CUSTOM_PERMISSIONS.put("sillyplugin", List.of(BUMPSCOCITY, FAKE_BLOCKS, SCRIPT_EXEC, EXEC_TIME));
+        PermissionManager.CUSTOM_PERMISSIONS.put("sillyplugin", List.of(BUMPSCOCITY, FAKE_BLOCKS, SCRIPT_EXEC, EXEC_TIME, PRINT));
     }
 }

@@ -8,6 +8,7 @@
     "compatibilityLevel": "JAVA_17",
     "client": [
         "ClientPacketListenerMixin",
+        "GameRendererMixin",
         "LocalPlayerMixin",
         "MinecraftAccessor",
         "MinecraftClientMixin",
@@ -18,6 +19,7 @@
         "hud.SubtitleOverlayMixin"
     ],
     "mixins": [
+        "AvatarAccessor",
         "AvatarManagerMixin",
         "AvatarMixin",
         "BlockMixin",
@@ -28,6 +30,7 @@
         "FiguraDocsManagerMixin",
         "FiguraGlobalsDocsMixin",
         "FiguraListDocsMixin",
+        "FiguraLuaPrinterMixin",
         "FiguraLuaRuntimeMixin",
         "FiguraRunCommandMixin",
         "LuaScriptParserInvokers",

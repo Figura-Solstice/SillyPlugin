@@ -6,7 +6,7 @@ import dev.celestial.silly.lua.BackportsAPI;
 import dev.celestial.silly.lua.DevAPI;
 import dev.celestial.silly.lua.SillyAPI;
 import dev.celestial.silly.lua.SillyProfiler;
-import dev.celestial.silly.not_a_mixin.AvatarAccessor;
+import dev.celestial.silly.not_a_mixin.AvatarExtensions;
 import org.figuramc.figura.lua.FiguraAPIManager;
 import org.figuramc.figura.lua.FiguraLuaRuntime;
 import org.spongepowered.asm.mixin.Final;
@@ -40,7 +40,6 @@ public class FiguraAPIManagerMixin {
             API_GETTERS.put("silly_dev", r -> r.owner.isHost ? new DevAPI(r) : null);
         }
 
-        API_GETTERS.put("silly", r -> ((AvatarAccessor)r.owner).silly$setSilly(new SillyAPI(r.owner)));
-        API_GETTERS.put("silly_backports", BackportsAPI::new);
+        API_GETTERS.put("silly", r -> ((AvatarExtensions)r.owner).silly$setSilly(new SillyAPI(r)));
     }
 }

@@ -20,7 +20,7 @@ public class FiguraRunCommandMixin {
     private static int executeCodeMixin(CommandContext<FiguraClientCommandSource> context, Operation<Integer> original) {
         Avatar avatar = AvatarManager.getLoadedAvatar(FiguraMod.getLocalPlayerUUID());
         if (avatar != null)
-            try(CallerContext ctx = BackportsAPI.openCallerContext(avatar.owner, "run_command")) {
+            try(CallerContext ctx = BackportsAPI.openCallerContext(avatar.owner, null, "run_command")) {
                 return original.call(context);
             }
         else

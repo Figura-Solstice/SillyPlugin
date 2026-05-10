@@ -50,7 +50,7 @@ public class AvatarMixin implements AvatarExtensions {
         silly = instance;
         silly$setUserData(SillyAPI.class, instance);
         silly$setUserData(BackportsAPI.class, instance.backports);
-        ((RuntimeAccessor)instance.runtime).getGlobals().set("silly_backports", instance.runtime.typeManager.javaToLua(instance.backports).arg1());
+        instance.runtime.setGlobal("silly_backports", instance.backports);
         return silly;
     }
 

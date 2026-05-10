@@ -33,21 +33,21 @@ public class EntityAPIMixin {
         Pair<UUID, String> caller = BackportsAPI.callerStack.get().peek();
         if (caller == null) throw new IllegalStateException("Caller stack peek gave null (?!?!?!?)");
         if (value.istable())
-            cir.setReturnValue(silly$transformTable(value.checktable(), caller.getLeft()));
+            cir.setReturnValue(silly$transformTable(value.checktable(), caller.getLeft(), entityUUID));
         else if (value.isfunction())
-            cir.setReturnValue(silly$transformFunction(value.checkfunction(), caller.getLeft()));
+            cir.setReturnValue(silly$transformFunction(value.checkfunction(), caller.getLeft(), entityUUID));
     }
 
     @Unique
-    private static LuaTable silly$transformTable(LuaTable table, UUID caller) {
+    private static LuaTable silly$transformTable(LuaTable table, UUID caller, UUID owner) {
         LuaTable ret = new LuaTable();
 
         for (LuaValue key : table.keys()) {
             LuaValue value = table.rawget(key);
             if (value.isfunction()) {
-                ret.rawset(key, silly$transformFunction(value.checkfunction(), caller));
+                ret.rawset(key, silly$transformFunction(value.checkfunction(), caller, owner));
             } else if (value.istable()) {
-                ret.rawset(key, silly$transformTable(value.checktable(), caller));
+                ret.rawset(key, silly$transformTable(value.checktable(), caller, owner));
             } else {
                 ret.rawset(key, value);
             }
@@ -56,11 +56,11 @@ public class EntityAPIMixin {
     }
 
     @Unique
-    private static LuaValue silly$transformFunction(LuaFunction func, UUID caller) {
+    private static LuaValue silly$transformFunction(LuaFunction func, UUID caller, UUID owner) {
         return new VarArgFunction() {
             @Override
             public Varargs invoke(Varargs args) {
-                try(CallerContext ctx = BackportsAPI.openCallerContext(caller, "TransformedFunction/" + func.hashCode())) {
+                try(CallerContext ctx = BackportsAPI.openCallerContext(caller, owner, "TransformedFunction/" + func.hashCode())) {
                     return func.invoke(args);
                 }
             }

@@ -22,6 +22,7 @@ import org.figuramc.figura.lua.docs.LuaMethodOverload;
 import org.figuramc.figura.lua.docs.LuaTypeDoc;
 import org.figuramc.figura.utils.FiguraText;
 import org.figuramc.figura.utils.PathUtils;
+import org.jetbrains.annotations.Nullable;
 import org.luaj.vm2.*;
 
 import java.nio.charset.StandardCharsets;
@@ -41,8 +42,8 @@ public class BackportsAPI {
     public static ThreadLocal<Deque<Pair<UUID, String>>> callerStack = ThreadLocal.withInitial(ArrayDeque::new);
     public static ThreadLocal<CyclicalDeque<String>> ops = ThreadLocal.withInitial(() -> new CyclicalDeque<>(SillyUtil.DEV_MODE ? 256 : 16));
 
-    public static CallerContext openCallerContext(UUID uuid, String context) {
-        return CallerContext.Open(uuid, context);
+    public static CallerContext openCallerContext(UUID uuid, @Nullable UUID owner, String context) {
+        return CallerContext.Open(uuid, owner, context);
     }
 
     @LuaFieldDoc("silly_backports.pre_render")
@@ -91,7 +92,14 @@ public class BackportsAPI {
     @LuaWhitelist
     @LuaMethodDoc(value = "silly_backports.get_caller")
     public String getCaller() {
-        Pair<UUID, String> caller = callerStack.get().peek();
+        Deque<Pair<UUID, String>> stack = callerStack.get();
+        Pair<UUID, String> caller = null;
+        var iter = stack.iterator();
+        if (iter.hasNext()) {
+            iter.next();
+            if (iter.hasNext())
+                caller = iter.next();
+        }
         if (caller != null) {
             UUID uuid = caller.getLeft();
             if (uuid != owner.owner) return uuid.toString();

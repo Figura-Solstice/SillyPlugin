@@ -100,7 +100,7 @@ public abstract class FiguraLuaRuntimeMixin {
                 endTime.set(Instant.now().plusMillis(this.owner.permissions.get(SillyPlugin.EXEC_TIME)));
             else
                 removeEndTime = false;
-            try(CallerContext ctx = BackportsAPI.openCallerContext(owner.owner, "avatarRun")) {
+            try(CallerContext ctx = BackportsAPI.openCallerContext(owner.owner, null, "avatarRun")) {
                 if (Objects.equals(toRun, "RENDER")) {
                     SillyProfiler prf = ((AvatarExtensions)owner).silly$getProfiler();
                         if (prf == null) {
@@ -160,7 +160,7 @@ public abstract class FiguraLuaRuntimeMixin {
     @WrapMethod(method = "initializeScript")
     public Varargs initScriptEnter(String str, Operation<Varargs> original) {
         boolean removeEndTime = true;
-        try(CallerContext ctx = BackportsAPI.openCallerContext(owner.owner, "initScript/" + str)) {
+        try(CallerContext ctx = BackportsAPI.openCallerContext(owner.owner, null, "initScript/" + str)) {
             silly$injectExecTimeHook();
             if (endTime.get() == null)
                 endTime.set(Instant.now().plusMillis(this.owner.permissions.get(SillyPlugin.EXEC_TIME)));

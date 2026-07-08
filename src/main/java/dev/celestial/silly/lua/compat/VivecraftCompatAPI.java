@@ -1,6 +1,8 @@
 package dev.celestial.silly.lua.compat;
 
 import dev.celestial.silly.SillyEnums;
+import net.minecraft.client.Minecraft;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 import org.figuramc.figura.lua.FiguraLuaRuntime;
 import org.figuramc.figura.lua.LuaNotNil;
@@ -13,20 +15,44 @@ import org.vivecraft.api.client.VRClientAPI;
 import org.vivecraft.api.data.VRBodyPart;
 import org.vivecraft.api.data.VRBodyPartData;
 import org.vivecraft.api.data.VRPose;
+import org.vivecraft.client.ClientVRPlayers;
+
+import java.util.UUID;
 
 @LuaWhitelist
 @LuaTypeDoc(name = "VivecraftCompatAPI", value = "silly.compats.vivecraft")
 public class VivecraftCompatAPI extends BaseCompatAPI {
     private final VRClientAPI api;
+    private final ClientVRPlayers players;
+    private final UUID ownerUuid;
 
     public VivecraftCompatAPI(FiguraLuaRuntime runtime) {
         super(runtime);
         this.api = VRClientAPI.instance();
+        this.players = ClientVRPlayers.getInstance();
+        this.ownerUuid = runtime.owner.owner;
     }
 
-    private VRPose getPose() {
+    private VRPose getOwnerPose() {
+        if (players == null) return null;
+        ClientVRPlayers.RotInfo info = players.getLatestRotationsForPlayer(ownerUuid);
+        if (info == null) return null;
+        Vec3 offset = Vec3.ZERO;
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.level != null) {
+            Player player = minecraft.level.getPlayerByUUID(ownerUuid);
+            if (player != null) offset = player.position();
+        }
+        return info.asVRPose(offset);
+    }
+
+    private VRPose getHostPose() {
         if (api == null || !api.isVRActive()) return null;
         return api.getPreTickWorldPose();
+    }
+
+    private VRPose getPose(boolean host) {
+        return host ? getHostPose() : getOwnerPose();
     }
 
     private VRBodyPart parseBodyPart(String name) {
@@ -45,8 +71,8 @@ public class VivecraftCompatAPI extends BaseCompatAPI {
         };
     }
 
-    private VRBodyPartData getBodyPartData(String name) {
-        VRPose pose = getPose();
+    private VRBodyPartData getBodyPartData(String name, boolean host) {
+        VRPose pose = getPose(host);
         if (pose == null) return null;
         VRBodyPart part = parseBodyPart(name);
         if (part == null) return null;
@@ -61,6 +87,106 @@ public class VivecraftCompatAPI extends BaseCompatAPI {
         return FiguraVec3.of(data.getPitch(), data.getYaw(), data.getRoll());
     }
 
+    private Boolean isVRActive(boolean host) {
+        if (host) return api != null && api.isVRActive();
+        if (players == null) return false;
+        return players.isVRPlayer(ownerUuid);
+    }
+
+    private Boolean isSeated(boolean host) {
+        if (host) {
+            if (api == null) return false;
+            return api.isSeated();
+        }
+        if (players == null) return false;
+        return players.isVRAndSeated(ownerUuid);
+    }
+
+    private Boolean isLeftHanded(boolean host) {
+        if (host) {
+            if (api == null) return false;
+            return api.isLeftHanded();
+        }
+        if (players == null) return false;
+        return players.isVRAndLeftHanded(ownerUuid);
+    }
+
+    private Float getWorldScale(boolean host) {
+        if (host) {
+            if (api == null) return 1.0f;
+            return api.getWorldScale();
+        }
+        if (players == null) return 1.0f;
+        ClientVRPlayers.RotInfo info = players.getLatestRotationsForPlayer(ownerUuid);
+        if (info == null) return 1.0f;
+        return info.worldScale;
+    }
+
+    private String getFBTMode(boolean host) {
+        if (host) {
+            if (api == null) return "none";
+            return api.getFBTMode().name();
+        }
+        if (players == null) return "none";
+        ClientVRPlayers.RotInfo info = players.getLatestRotationsForPlayer(ownerUuid);
+        if (info == null) return "none";
+        return info.fbtMode.name();
+    }
+
+    private FiguraVec3 getHeadPos(boolean host) {
+        VRBodyPartData data = getBodyPartData("head", host);
+        if (data == null) return null;
+        return toFigura(data.getPos());
+    }
+
+    private FiguraVec3 getHeadDir(boolean host) {
+        VRBodyPartData data = getBodyPartData("head", host);
+        if (data == null) return null;
+        return toFigura(data.getDir());
+    }
+
+    private FiguraVec3 getHeadRot(boolean host) {
+        VRBodyPartData data = getBodyPartData("head", host);
+        if (data == null) return null;
+        return toFiguraRot(data);
+    }
+
+    private FiguraVec3 getHandPos(String hand, boolean host) {
+        VRBodyPartData data = getBodyPartData(hand, host);
+        if (data == null) return null;
+        return toFigura(data.getPos());
+    }
+
+    private FiguraVec3 getHandDir(String hand, boolean host) {
+        VRBodyPartData data = getBodyPartData(hand, host);
+        if (data == null) return null;
+        return toFigura(data.getDir());
+    }
+
+    private FiguraVec3 getHandRot(String hand, boolean host) {
+        VRBodyPartData data = getBodyPartData(hand, host);
+        if (data == null) return null;
+        return toFiguraRot(data);
+    }
+
+    private FiguraVec3 getBodyPartPos(String bodyPart, boolean host) {
+        VRBodyPartData data = getBodyPartData(bodyPart, host);
+        if (data == null) return null;
+        return toFigura(data.getPos());
+    }
+
+    private FiguraVec3 getBodyPartDir(String bodyPart, boolean host) {
+        VRBodyPartData data = getBodyPartData(bodyPart, host);
+        if (data == null) return null;
+        return toFigura(data.getDir());
+    }
+
+    private FiguraVec3 getBodyPartRot(String bodyPart, boolean host) {
+        VRBodyPartData data = getBodyPartData(bodyPart, host);
+        if (data == null) return null;
+        return toFiguraRot(data);
+    }
+
     @LuaWhitelist
     @LuaMethodDoc("silly.compats.vivecraft.is_vr_initialized")
     public Boolean isVRInitialized() {
@@ -70,59 +196,97 @@ public class VivecraftCompatAPI extends BaseCompatAPI {
     @LuaWhitelist
     @LuaMethodDoc("silly.compats.vivecraft.is_vr_active")
     public Boolean isVRActive() {
-        return api != null && api.isVRActive();
+        return isVRActive(false);
+    }
+
+    @LuaWhitelist
+    @LuaMethodDoc("silly.compats.vivecraft.is_vr_active_host")
+    public Boolean isVRActiveHost() {
+        return isVRActive(true);
     }
 
     @LuaWhitelist
     @LuaMethodDoc("silly.compats.vivecraft.is_seated")
     public Boolean isSeated() {
-        if (api == null) return false;
-        return api.isSeated();
+        return isSeated(false);
+    }
+
+    @LuaWhitelist
+    @LuaMethodDoc("silly.compats.vivecraft.is_seated_host")
+    public Boolean isSeatedHost() {
+        return isSeated(true);
     }
 
     @LuaWhitelist
     @LuaMethodDoc("silly.compats.vivecraft.is_left_handed")
     public Boolean isLeftHanded() {
-        if (api == null) return false;
-        return api.isLeftHanded();
+        return isLeftHanded(false);
+    }
+
+    @LuaWhitelist
+    @LuaMethodDoc("silly.compats.vivecraft.is_left_handed_host")
+    public Boolean isLeftHandedHost() {
+        return isLeftHanded(true);
     }
 
     @LuaWhitelist
     @LuaMethodDoc("silly.compats.vivecraft.get_world_scale")
     public Float getWorldScale() {
-        if (api == null) return 1.0f;
-        return api.getWorldScale();
+        return getWorldScale(false);
+    }
+
+    @LuaWhitelist
+    @LuaMethodDoc("silly.compats.vivecraft.get_world_scale_host")
+    public Float getWorldScaleHost() {
+        return getWorldScale(true);
     }
 
     @LuaWhitelist
     @LuaMethodDoc("silly.compats.vivecraft.get_fbt_mode")
     public String getFBTMode() {
-        if (api == null) return "none";
-        return api.getFBTMode().name();
+        return getFBTMode(false);
+    }
+
+    @LuaWhitelist
+    @LuaMethodDoc("silly.compats.vivecraft.get_fbt_mode_host")
+    public String getFBTModeHost() {
+        return getFBTMode(true);
     }
 
     @LuaWhitelist
     @LuaMethodDoc("silly.compats.vivecraft.get_head_pos")
     public FiguraVec3 getHeadPos() {
-        VRBodyPartData data = getBodyPartData("head");
-        if (data == null) return null;
-        return toFigura(data.getPos());
+        return getHeadPos(false);
+    }
+
+    @LuaWhitelist
+    @LuaMethodDoc("silly.compats.vivecraft.get_head_pos_host")
+    public FiguraVec3 getHeadPosHost() {
+        return getHeadPos(true);
     }
 
     @LuaWhitelist
     @LuaMethodDoc("silly.compats.vivecraft.get_head_dir")
     public FiguraVec3 getHeadDir() {
-        VRBodyPartData data = getBodyPartData("head");
-        if (data == null) return null;
-        return toFigura(data.getDir());
+        return getHeadDir(false);
+    }
+
+    @LuaWhitelist
+    @LuaMethodDoc("silly.compats.vivecraft.get_head_dir_host")
+    public FiguraVec3 getHeadDirHost() {
+        return getHeadDir(true);
     }
 
     @LuaWhitelist
     @LuaMethodDoc("silly.compats.vivecraft.get_head_rot")
     public FiguraVec3 getHeadRot() {
-        VRBodyPartData data = getBodyPartData("head");
-        if (data == null) return null;
-        return toFiguraRot(data);
+        return getHeadRot(false);
+    }
+
+    @LuaWhitelist
+    @LuaMethodDoc("silly.compats.vivecraft.get_head_rot_host")
+    public FiguraVec3 getHeadRotHost() {
+        return getHeadRot(true);
     }
 
     @LuaWhitelist
@@ -134,9 +298,19 @@ public class VivecraftCompatAPI extends BaseCompatAPI {
             )
     )
     public FiguraVec3 getHandPos(@LuaNotNil String hand) {
-        VRBodyPartData data = getBodyPartData(hand);
-        if (data == null) return null;
-        return toFigura(data.getPos());
+        return getHandPos(hand, false);
+    }
+
+    @LuaWhitelist
+    @LuaMethodDoc(
+            value = "silly.compats.vivecraft.get_hand_pos_host",
+            overloads = @LuaMethodOverload(
+                    argumentTypes = SillyEnums.VR_BODY_PART.class,
+                    argumentNames = "hand"
+            )
+    )
+    public FiguraVec3 getHandPosHost(@LuaNotNil String hand) {
+        return getHandPos(hand, true);
     }
 
     @LuaWhitelist
@@ -148,9 +322,19 @@ public class VivecraftCompatAPI extends BaseCompatAPI {
             )
     )
     public FiguraVec3 getHandDir(@LuaNotNil String hand) {
-        VRBodyPartData data = getBodyPartData(hand);
-        if (data == null) return null;
-        return toFigura(data.getDir());
+        return getHandDir(hand, false);
+    }
+
+    @LuaWhitelist
+    @LuaMethodDoc(
+            value = "silly.compats.vivecraft.get_hand_dir_host",
+            overloads = @LuaMethodOverload(
+                    argumentTypes = SillyEnums.VR_BODY_PART.class,
+                    argumentNames = "hand"
+            )
+    )
+    public FiguraVec3 getHandDirHost(@LuaNotNil String hand) {
+        return getHandDir(hand, true);
     }
 
     @LuaWhitelist
@@ -162,9 +346,19 @@ public class VivecraftCompatAPI extends BaseCompatAPI {
             )
     )
     public FiguraVec3 getHandRot(@LuaNotNil String hand) {
-        VRBodyPartData data = getBodyPartData(hand);
-        if (data == null) return null;
-        return toFiguraRot(data);
+        return getHandRot(hand, false);
+    }
+
+    @LuaWhitelist
+    @LuaMethodDoc(
+            value = "silly.compats.vivecraft.get_hand_rot_host",
+            overloads = @LuaMethodOverload(
+                    argumentTypes = SillyEnums.VR_BODY_PART.class,
+                    argumentNames = "hand"
+            )
+    )
+    public FiguraVec3 getHandRotHost(@LuaNotNil String hand) {
+        return getHandRot(hand, true);
     }
 
     @LuaWhitelist
@@ -176,9 +370,19 @@ public class VivecraftCompatAPI extends BaseCompatAPI {
             )
     )
     public FiguraVec3 getBodyPartPos(@LuaNotNil String bodyPart) {
-        VRBodyPartData data = getBodyPartData(bodyPart);
-        if (data == null) return null;
-        return toFigura(data.getPos());
+        return getBodyPartPos(bodyPart, false);
+    }
+
+    @LuaWhitelist
+    @LuaMethodDoc(
+            value = "silly.compats.vivecraft.get_body_part_pos_host",
+            overloads = @LuaMethodOverload(
+                    argumentTypes = SillyEnums.VR_BODY_PART.class,
+                    argumentNames = "bodyPart"
+            )
+    )
+    public FiguraVec3 getBodyPartPosHost(@LuaNotNil String bodyPart) {
+        return getBodyPartPos(bodyPart, true);
     }
 
     @LuaWhitelist
@@ -190,9 +394,19 @@ public class VivecraftCompatAPI extends BaseCompatAPI {
             )
     )
     public FiguraVec3 getBodyPartDir(@LuaNotNil String bodyPart) {
-        VRBodyPartData data = getBodyPartData(bodyPart);
-        if (data == null) return null;
-        return toFigura(data.getDir());
+        return getBodyPartDir(bodyPart, false);
+    }
+
+    @LuaWhitelist
+    @LuaMethodDoc(
+            value = "silly.compats.vivecraft.get_body_part_dir_host",
+            overloads = @LuaMethodOverload(
+                    argumentTypes = SillyEnums.VR_BODY_PART.class,
+                    argumentNames = "bodyPart"
+            )
+    )
+    public FiguraVec3 getBodyPartDirHost(@LuaNotNil String bodyPart) {
+        return getBodyPartDir(bodyPart, true);
     }
 
     @LuaWhitelist
@@ -204,9 +418,19 @@ public class VivecraftCompatAPI extends BaseCompatAPI {
             )
     )
     public FiguraVec3 getBodyPartRot(@LuaNotNil String bodyPart) {
-        VRBodyPartData data = getBodyPartData(bodyPart);
-        if (data == null) return null;
-        return toFiguraRot(data);
+        return getBodyPartRot(bodyPart, false);
+    }
+
+    @LuaWhitelist
+    @LuaMethodDoc(
+            value = "silly.compats.vivecraft.get_body_part_rot_host",
+            overloads = @LuaMethodOverload(
+                    argumentTypes = SillyEnums.VR_BODY_PART.class,
+                    argumentNames = "bodyPart"
+            )
+    )
+    public FiguraVec3 getBodyPartRotHost(@LuaNotNil String bodyPart) {
+        return getBodyPartRot(bodyPart, true);
     }
 
     @LuaWhitelist

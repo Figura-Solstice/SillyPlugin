@@ -24,35 +24,29 @@ import java.util.UUID;
 public class VivecraftCompatAPI extends BaseCompatAPI {
     private final VRClientAPI api;
     private final ClientVRPlayers players;
-    private final UUID ownerUuid;
 
     public VivecraftCompatAPI(FiguraLuaRuntime runtime) {
         super(runtime);
         this.api = VRClientAPI.instance();
         this.players = ClientVRPlayers.getInstance();
-        this.ownerUuid = runtime.owner.owner;
     }
 
-    private VRPose getOwnerPose() {
+    private UUID getTargetUUID(String uuid) {
+        return uuid != null ? UUID.fromString(uuid) : avatar.owner;
+    }
+
+    private VRPose getPose(String uuid) {
         if (players == null) return null;
-        ClientVRPlayers.RotInfo info = players.getLatestRotationsForPlayer(ownerUuid);
+        UUID target = getTargetUUID(uuid);
+        ClientVRPlayers.RotInfo info = players.getRotationsForPlayer(target);
         if (info == null) return null;
         Vec3 offset = Vec3.ZERO;
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level != null) {
-            Player player = minecraft.level.getPlayerByUUID(ownerUuid);
+            Player player = minecraft.level.getPlayerByUUID(target);
             if (player != null) offset = player.position();
         }
         return info.asVRPose(offset);
-    }
-
-    private VRPose getHostPose() {
-        if (api == null || !api.isVRActive()) return null;
-        return api.getPreTickWorldPose();
-    }
-
-    private VRPose getPose(boolean host) {
-        return host ? getHostPose() : getOwnerPose();
     }
 
     private VRBodyPart parseBodyPart(String name) {
@@ -71,8 +65,8 @@ public class VivecraftCompatAPI extends BaseCompatAPI {
         };
     }
 
-    private VRBodyPartData getBodyPartData(String name, boolean host) {
-        VRPose pose = getPose(host);
+    private VRBodyPartData getBodyPartData(String name, String uuid) {
+        VRPose pose = getPose(uuid);
         if (pose == null) return null;
         VRBodyPart part = parseBodyPart(name);
         if (part == null) return null;
@@ -87,102 +81,85 @@ public class VivecraftCompatAPI extends BaseCompatAPI {
         return FiguraVec3.of(data.getPitch(), data.getYaw(), data.getRoll());
     }
 
-    private Boolean isVRActive(boolean host) {
-        if (host) return api != null && api.isVRActive();
+    private Boolean checkVRActive(String uuid) {
         if (players == null) return false;
-        return players.isVRPlayer(ownerUuid);
+        return players.isVRPlayer(getTargetUUID(uuid));
     }
 
-    private Boolean isSeated(boolean host) {
-        if (host) {
-            if (api == null) return false;
-            return api.isSeated();
-        }
+    private Boolean checkSeated(String uuid) {
         if (players == null) return false;
-        return players.isVRAndSeated(ownerUuid);
+        return players.isVRAndSeated(getTargetUUID(uuid));
     }
 
-    private Boolean isLeftHanded(boolean host) {
-        if (host) {
-            if (api == null) return false;
-            return api.isLeftHanded();
-        }
+    private Boolean checkLeftHanded(String uuid) {
         if (players == null) return false;
-        return players.isVRAndLeftHanded(ownerUuid);
+        return players.isVRAndLeftHanded(getTargetUUID(uuid));
     }
 
-    private Float getWorldScale(boolean host) {
-        if (host) {
-            if (api == null) return 1.0f;
-            return api.getWorldScale();
-        }
+    private Float fetchWorldScale(String uuid) {
         if (players == null) return 1.0f;
-        ClientVRPlayers.RotInfo info = players.getLatestRotationsForPlayer(ownerUuid);
+        ClientVRPlayers.RotInfo info = players.getRotationsForPlayer(getTargetUUID(uuid));
         if (info == null) return 1.0f;
         return info.worldScale;
     }
 
-    private String getFBTMode(boolean host) {
-        if (host) {
-            if (api == null) return "none";
-            return api.getFBTMode().name();
-        }
+    private String fetchFBTMode(String uuid) {
         if (players == null) return "none";
-        ClientVRPlayers.RotInfo info = players.getLatestRotationsForPlayer(ownerUuid);
+        ClientVRPlayers.RotInfo info = players.getRotationsForPlayer(getTargetUUID(uuid));
         if (info == null) return "none";
         return info.fbtMode.name();
     }
 
-    private FiguraVec3 getHeadPos(boolean host) {
-        VRBodyPartData data = getBodyPartData("head", host);
+    private FiguraVec3 fetchHeadPos(String uuid) {
+        VRBodyPartData data = getBodyPartData("head", uuid);
         if (data == null) return null;
         return toFigura(data.getPos());
     }
 
-    private FiguraVec3 getHeadDir(boolean host) {
-        VRBodyPartData data = getBodyPartData("head", host);
+    private FiguraVec3 fetchHeadDir(String uuid) {
+        VRBodyPartData data = getBodyPartData("head", uuid);
         if (data == null) return null;
         return toFigura(data.getDir());
     }
 
-    private FiguraVec3 getHeadRot(boolean host) {
-        VRBodyPartData data = getBodyPartData("head", host);
+    private FiguraVec3 fetchHeadRot(String uuid) {
+        VRBodyPartData data = getBodyPartData("head", uuid);
         if (data == null) return null;
         return toFiguraRot(data);
     }
 
-    private FiguraVec3 getHandPos(String hand, boolean host) {
-        VRBodyPartData data = getBodyPartData(hand, host);
+    private FiguraVec3 fetchHandPos(String hand, String uuid) {
+        VRBodyPartData data = getBodyPartData(hand, uuid);
         if (data == null) return null;
         return toFigura(data.getPos());
     }
 
-    private FiguraVec3 getHandDir(String hand, boolean host) {
-        VRBodyPartData data = getBodyPartData(hand, host);
+    private FiguraVec3 fetchHandDir(String hand, String uuid) {
+        VRBodyPartData data = getBodyPartData(hand, uuid);
         if (data == null) return null;
         return toFigura(data.getDir());
     }
 
-    private FiguraVec3 getHandRot(String hand, boolean host) {
-        VRBodyPartData data = getBodyPartData(hand, host);
+    private FiguraVec3 fetchHandRot(String hand, String uuid) {
+        VRBodyPartData data = getBodyPartData(hand, uuid);
         if (data == null) return null;
         return toFiguraRot(data);
     }
 
-    private FiguraVec3 getBodyPartPos(String bodyPart, boolean host) {
-        VRBodyPartData data = getBodyPartData(bodyPart, host);
+    private FiguraVec3 fetchBodyPartPos(String bodyPart, String uuid) {
+        VRBodyPartData data = getBodyPartData(bodyPart, uuid);
         if (data == null) return null;
         return toFigura(data.getPos());
     }
 
-    private FiguraVec3 getBodyPartDir(String bodyPart, boolean host) {
-        VRBodyPartData data = getBodyPartData(bodyPart, host);
+    private FiguraVec3 fetchBodyPartDir(String bodyPart, String uuid) {
+        VRBodyPartData data = getBodyPartData(bodyPart, uuid);
         if (data == null) return null;
         return toFigura(data.getDir());
     }
 
-    private FiguraVec3 getBodyPartRot(String bodyPart, boolean host) {
-        VRBodyPartData data = getBodyPartData(bodyPart, host);
+    private FiguraVec3 fetchBodyPartRot(String bodyPart, String uuid) {
+        VRBodyPartData data = getBodyPartData(bodyPart, uuid);
         if (data == null) return null;
         return toFiguraRot(data);
     }
@@ -194,243 +171,309 @@ public class VivecraftCompatAPI extends BaseCompatAPI {
     }
 
     @LuaWhitelist
-    @LuaMethodDoc("silly.compats.vivecraft.is_vr_active")
+    @LuaMethodDoc(
+            value = "silly.compats.vivecraft.is_vr_active",
+            overloads = {
+                    @LuaMethodOverload(returnType = Boolean.class),
+                    @LuaMethodOverload(
+                            argumentTypes = String.class,
+                            argumentNames = "uuid",
+                            returnType = Boolean.class
+                    )
+            }
+    )
     public Boolean isVRActive() {
-        return isVRActive(false);
+        return checkVRActive(null);
     }
 
     @LuaWhitelist
-    @LuaMethodDoc("silly.compats.vivecraft.is_vr_active_host")
-    public Boolean isVRActiveHost() {
-        return isVRActive(true);
+    public Boolean isVRActive(String uuid) {
+        return checkVRActive(uuid);
     }
 
     @LuaWhitelist
-    @LuaMethodDoc("silly.compats.vivecraft.is_seated")
+    @LuaMethodDoc(
+            value = "silly.compats.vivecraft.is_seated",
+            overloads = {
+                    @LuaMethodOverload(returnType = Boolean.class),
+                    @LuaMethodOverload(
+                            argumentTypes = String.class,
+                            argumentNames = "uuid",
+                            returnType = Boolean.class
+                    )
+            }
+    )
     public Boolean isSeated() {
-        return isSeated(false);
+        return checkSeated(null);
     }
 
     @LuaWhitelist
-    @LuaMethodDoc("silly.compats.vivecraft.is_seated_host")
-    public Boolean isSeatedHost() {
-        return isSeated(true);
+    public Boolean isSeated(String uuid) {
+        return checkSeated(uuid);
     }
 
     @LuaWhitelist
-    @LuaMethodDoc("silly.compats.vivecraft.is_left_handed")
+    @LuaMethodDoc(
+            value = "silly.compats.vivecraft.is_left_handed",
+            overloads = {
+                    @LuaMethodOverload(returnType = Boolean.class),
+                    @LuaMethodOverload(
+                            argumentTypes = String.class,
+                            argumentNames = "uuid",
+                            returnType = Boolean.class
+                    )
+            }
+    )
     public Boolean isLeftHanded() {
-        return isLeftHanded(false);
+        return checkLeftHanded(null);
     }
 
     @LuaWhitelist
-    @LuaMethodDoc("silly.compats.vivecraft.is_left_handed_host")
-    public Boolean isLeftHandedHost() {
-        return isLeftHanded(true);
+    public Boolean isLeftHanded(String uuid) {
+        return checkLeftHanded(uuid);
     }
 
     @LuaWhitelist
-    @LuaMethodDoc("silly.compats.vivecraft.get_world_scale")
+    @LuaMethodDoc(
+            value = "silly.compats.vivecraft.get_world_scale",
+            overloads = {
+                    @LuaMethodOverload(returnType = Float.class),
+                    @LuaMethodOverload(
+                            argumentTypes = String.class,
+                            argumentNames = "uuid",
+                            returnType = Float.class
+                    )
+            }
+    )
     public Float getWorldScale() {
-        return getWorldScale(false);
+        return fetchWorldScale(null);
     }
 
     @LuaWhitelist
-    @LuaMethodDoc("silly.compats.vivecraft.get_world_scale_host")
-    public Float getWorldScaleHost() {
-        return getWorldScale(true);
+    public Float getWorldScale(String uuid) {
+        return fetchWorldScale(uuid);
     }
 
     @LuaWhitelist
-    @LuaMethodDoc("silly.compats.vivecraft.get_fbt_mode")
+    @LuaMethodDoc(
+            value = "silly.compats.vivecraft.get_fbt_mode",
+            overloads = {
+                    @LuaMethodOverload(returnType = String.class),
+                    @LuaMethodOverload(
+                            argumentTypes = String.class,
+                            argumentNames = "uuid",
+                            returnType = String.class
+                    )
+            }
+    )
     public String getFBTMode() {
-        return getFBTMode(false);
+        return fetchFBTMode(null);
     }
 
     @LuaWhitelist
-    @LuaMethodDoc("silly.compats.vivecraft.get_fbt_mode_host")
-    public String getFBTModeHost() {
-        return getFBTMode(true);
+    public String getFBTMode(String uuid) {
+        return fetchFBTMode(uuid);
     }
 
     @LuaWhitelist
-    @LuaMethodDoc("silly.compats.vivecraft.get_head_pos")
+    @LuaMethodDoc(
+            value = "silly.compats.vivecraft.get_head_pos",
+            overloads = {
+                    @LuaMethodOverload(returnType = FiguraVec3.class),
+                    @LuaMethodOverload(
+                            argumentTypes = String.class,
+                            argumentNames = "uuid",
+                            returnType = FiguraVec3.class
+                    )
+            }
+    )
     public FiguraVec3 getHeadPos() {
-        return getHeadPos(false);
+        return fetchHeadPos(null);
     }
 
     @LuaWhitelist
-    @LuaMethodDoc("silly.compats.vivecraft.get_head_pos_host")
-    public FiguraVec3 getHeadPosHost() {
-        return getHeadPos(true);
+    public FiguraVec3 getHeadPos(String uuid) {
+        return fetchHeadPos(uuid);
     }
 
     @LuaWhitelist
-    @LuaMethodDoc("silly.compats.vivecraft.get_head_dir")
+    @LuaMethodDoc(
+            value = "silly.compats.vivecraft.get_head_dir",
+            overloads = {
+                    @LuaMethodOverload(returnType = FiguraVec3.class),
+                    @LuaMethodOverload(
+                            argumentTypes = String.class,
+                            argumentNames = "uuid",
+                            returnType = FiguraVec3.class
+                    )
+            }
+    )
     public FiguraVec3 getHeadDir() {
-        return getHeadDir(false);
+        return fetchHeadDir(null);
     }
 
     @LuaWhitelist
-    @LuaMethodDoc("silly.compats.vivecraft.get_head_dir_host")
-    public FiguraVec3 getHeadDirHost() {
-        return getHeadDir(true);
+    public FiguraVec3 getHeadDir(String uuid) {
+        return fetchHeadDir(uuid);
     }
 
     @LuaWhitelist
-    @LuaMethodDoc("silly.compats.vivecraft.get_head_rot")
+    @LuaMethodDoc(
+            value = "silly.compats.vivecraft.get_head_rot",
+            overloads = {
+                    @LuaMethodOverload(returnType = FiguraVec3.class),
+                    @LuaMethodOverload(
+                            argumentTypes = String.class,
+                            argumentNames = "uuid",
+                            returnType = FiguraVec3.class
+                    )
+            }
+    )
     public FiguraVec3 getHeadRot() {
-        return getHeadRot(false);
+        return fetchHeadRot(null);
     }
 
     @LuaWhitelist
-    @LuaMethodDoc("silly.compats.vivecraft.get_head_rot_host")
-    public FiguraVec3 getHeadRotHost() {
-        return getHeadRot(true);
+    public FiguraVec3 getHeadRot(String uuid) {
+        return fetchHeadRot(uuid);
     }
 
     @LuaWhitelist
     @LuaMethodDoc(
             value = "silly.compats.vivecraft.get_hand_pos",
-            overloads = @LuaMethodOverload(
-                    argumentTypes = SillyEnums.VR_BODY_PART.class,
-                    argumentNames = "hand"
-            )
+            overloads = {
+                    @LuaMethodOverload(
+                            argumentTypes = SillyEnums.VR_BODY_PART.class,
+                            argumentNames = "hand"
+                    ),
+                    @LuaMethodOverload(
+                            argumentTypes = {SillyEnums.VR_BODY_PART.class, String.class},
+                            argumentNames = {"hand", "uuid"}
+                    )
+            }
     )
     public FiguraVec3 getHandPos(@LuaNotNil String hand) {
-        return getHandPos(hand, false);
+        return fetchHandPos(hand, null);
     }
 
     @LuaWhitelist
-    @LuaMethodDoc(
-            value = "silly.compats.vivecraft.get_hand_pos_host",
-            overloads = @LuaMethodOverload(
-                    argumentTypes = SillyEnums.VR_BODY_PART.class,
-                    argumentNames = "hand"
-            )
-    )
-    public FiguraVec3 getHandPosHost(@LuaNotNil String hand) {
-        return getHandPos(hand, true);
+    public FiguraVec3 getHandPos(@LuaNotNil String hand, String uuid) {
+        return fetchHandPos(hand, uuid);
     }
 
     @LuaWhitelist
     @LuaMethodDoc(
             value = "silly.compats.vivecraft.get_hand_dir",
-            overloads = @LuaMethodOverload(
-                    argumentTypes = SillyEnums.VR_BODY_PART.class,
-                    argumentNames = "hand"
-            )
+            overloads = {
+                    @LuaMethodOverload(
+                            argumentTypes = SillyEnums.VR_BODY_PART.class,
+                            argumentNames = "hand"
+                    ),
+                    @LuaMethodOverload(
+                            argumentTypes = {SillyEnums.VR_BODY_PART.class, String.class},
+                            argumentNames = {"hand", "uuid"}
+                    )
+            }
     )
     public FiguraVec3 getHandDir(@LuaNotNil String hand) {
-        return getHandDir(hand, false);
+        return fetchHandDir(hand, null);
     }
 
     @LuaWhitelist
-    @LuaMethodDoc(
-            value = "silly.compats.vivecraft.get_hand_dir_host",
-            overloads = @LuaMethodOverload(
-                    argumentTypes = SillyEnums.VR_BODY_PART.class,
-                    argumentNames = "hand"
-            )
-    )
-    public FiguraVec3 getHandDirHost(@LuaNotNil String hand) {
-        return getHandDir(hand, true);
+    public FiguraVec3 getHandDir(@LuaNotNil String hand, String uuid) {
+        return fetchHandDir(hand, uuid);
     }
 
     @LuaWhitelist
     @LuaMethodDoc(
             value = "silly.compats.vivecraft.get_hand_rot",
-            overloads = @LuaMethodOverload(
-                    argumentTypes = SillyEnums.VR_BODY_PART.class,
-                    argumentNames = "hand"
-            )
+            overloads = {
+                    @LuaMethodOverload(
+                            argumentTypes = SillyEnums.VR_BODY_PART.class,
+                            argumentNames = "hand"
+                    ),
+                    @LuaMethodOverload(
+                            argumentTypes = {SillyEnums.VR_BODY_PART.class, String.class},
+                            argumentNames = {"hand", "uuid"}
+                    )
+            }
     )
     public FiguraVec3 getHandRot(@LuaNotNil String hand) {
-        return getHandRot(hand, false);
+        return fetchHandRot(hand, null);
     }
 
     @LuaWhitelist
-    @LuaMethodDoc(
-            value = "silly.compats.vivecraft.get_hand_rot_host",
-            overloads = @LuaMethodOverload(
-                    argumentTypes = SillyEnums.VR_BODY_PART.class,
-                    argumentNames = "hand"
-            )
-    )
-    public FiguraVec3 getHandRotHost(@LuaNotNil String hand) {
-        return getHandRot(hand, true);
+    public FiguraVec3 getHandRot(@LuaNotNil String hand, String uuid) {
+        return fetchHandRot(hand, uuid);
     }
 
     @LuaWhitelist
     @LuaMethodDoc(
             value = "silly.compats.vivecraft.get_body_part_pos",
-            overloads = @LuaMethodOverload(
-                    argumentTypes = SillyEnums.VR_BODY_PART.class,
-                    argumentNames = "bodyPart"
-            )
+            overloads = {
+                    @LuaMethodOverload(
+                            argumentTypes = SillyEnums.VR_BODY_PART.class,
+                            argumentNames = "bodyPart"
+                    ),
+                    @LuaMethodOverload(
+                            argumentTypes = {SillyEnums.VR_BODY_PART.class, String.class},
+                            argumentNames = {"bodyPart", "uuid"}
+                    )
+            }
     )
     public FiguraVec3 getBodyPartPos(@LuaNotNil String bodyPart) {
-        return getBodyPartPos(bodyPart, false);
+        return fetchBodyPartPos(bodyPart, null);
     }
 
     @LuaWhitelist
-    @LuaMethodDoc(
-            value = "silly.compats.vivecraft.get_body_part_pos_host",
-            overloads = @LuaMethodOverload(
-                    argumentTypes = SillyEnums.VR_BODY_PART.class,
-                    argumentNames = "bodyPart"
-            )
-    )
-    public FiguraVec3 getBodyPartPosHost(@LuaNotNil String bodyPart) {
-        return getBodyPartPos(bodyPart, true);
+    public FiguraVec3 getBodyPartPos(@LuaNotNil String bodyPart, String uuid) {
+        return fetchBodyPartPos(bodyPart, uuid);
     }
 
     @LuaWhitelist
     @LuaMethodDoc(
             value = "silly.compats.vivecraft.get_body_part_dir",
-            overloads = @LuaMethodOverload(
-                    argumentTypes = SillyEnums.VR_BODY_PART.class,
-                    argumentNames = "bodyPart"
-            )
+            overloads = {
+                    @LuaMethodOverload(
+                            argumentTypes = SillyEnums.VR_BODY_PART.class,
+                            argumentNames = "bodyPart"
+                    ),
+                    @LuaMethodOverload(
+                            argumentTypes = {SillyEnums.VR_BODY_PART.class, String.class},
+                            argumentNames = {"bodyPart", "uuid"}
+                    )
+            }
     )
     public FiguraVec3 getBodyPartDir(@LuaNotNil String bodyPart) {
-        return getBodyPartDir(bodyPart, false);
+        return fetchBodyPartDir(bodyPart, null);
     }
 
     @LuaWhitelist
-    @LuaMethodDoc(
-            value = "silly.compats.vivecraft.get_body_part_dir_host",
-            overloads = @LuaMethodOverload(
-                    argumentTypes = SillyEnums.VR_BODY_PART.class,
-                    argumentNames = "bodyPart"
-            )
-    )
-    public FiguraVec3 getBodyPartDirHost(@LuaNotNil String bodyPart) {
-        return getBodyPartDir(bodyPart, true);
+    public FiguraVec3 getBodyPartDir(@LuaNotNil String bodyPart, String uuid) {
+        return fetchBodyPartDir(bodyPart, uuid);
     }
 
     @LuaWhitelist
     @LuaMethodDoc(
             value = "silly.compats.vivecraft.get_body_part_rot",
-            overloads = @LuaMethodOverload(
-                    argumentTypes = SillyEnums.VR_BODY_PART.class,
-                    argumentNames = "bodyPart"
-            )
+            overloads = {
+                    @LuaMethodOverload(
+                            argumentTypes = SillyEnums.VR_BODY_PART.class,
+                            argumentNames = "bodyPart"
+                    ),
+                    @LuaMethodOverload(
+                            argumentTypes = {SillyEnums.VR_BODY_PART.class, String.class},
+                            argumentNames = {"bodyPart", "uuid"}
+                    )
+            }
     )
     public FiguraVec3 getBodyPartRot(@LuaNotNil String bodyPart) {
-        return getBodyPartRot(bodyPart, false);
+        return fetchBodyPartRot(bodyPart, null);
     }
 
     @LuaWhitelist
-    @LuaMethodDoc(
-            value = "silly.compats.vivecraft.get_body_part_rot_host",
-            overloads = @LuaMethodOverload(
-                    argumentTypes = SillyEnums.VR_BODY_PART.class,
-                    argumentNames = "bodyPart"
-            )
-    )
-    public FiguraVec3 getBodyPartRotHost(@LuaNotNil String bodyPart) {
-        return getBodyPartRot(bodyPart, true);
+    public FiguraVec3 getBodyPartRot(@LuaNotNil String bodyPart, String uuid) {
+        return fetchBodyPartRot(bodyPart, uuid);
     }
 
     @LuaWhitelist

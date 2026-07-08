@@ -11,12 +11,17 @@ import org.figuramc.figura.lua.docs.LuaMethodDoc;
 import org.figuramc.figura.lua.docs.LuaMethodOverload;
 import org.figuramc.figura.lua.docs.LuaTypeDoc;
 import org.figuramc.figura.math.vector.FiguraVec3;
+import org.figuramc.figura.math.vector.FiguraVec4;
+import org.joml.Quaternionfc;
+import org.joml.Vector3f;
 import org.vivecraft.api.client.VRClientAPI;
 import org.vivecraft.api.data.VRBodyPart;
 import org.vivecraft.api.data.VRBodyPartData;
 import org.vivecraft.api.data.VRPose;
 import org.vivecraft.client.ClientVRPlayers;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 @LuaWhitelist
@@ -78,90 +83,14 @@ public class VivecraftCompatAPI extends BaseCompatAPI {
     }
 
     private static FiguraVec3 toFiguraRot(VRBodyPartData data) {
-        return FiguraVec3.of(data.getPitch(), data.getYaw(), data.getRoll());
-    }
-
-    private Boolean checkVRActive(String uuid) {
-        if (players == null) return false;
-        return players.isVRPlayer(getTargetUUID(uuid));
-    }
-
-    private Boolean checkSeated(String uuid) {
-        if (players == null) return false;
-        return players.isVRAndSeated(getTargetUUID(uuid));
-    }
-
-    private Boolean checkLeftHanded(String uuid) {
-        if (players == null) return false;
-        return players.isVRAndLeftHanded(getTargetUUID(uuid));
-    }
-
-    private Float fetchWorldScale(String uuid) {
-        if (players == null) return 1.0f;
-        ClientVRPlayers.RotInfo info = players.getRotationsForPlayer(getTargetUUID(uuid));
-        if (info == null) return 1.0f;
-        return info.worldScale;
-    }
-
-    private String fetchFBTMode(String uuid) {
-        if (players == null) return "none";
-        ClientVRPlayers.RotInfo info = players.getRotationsForPlayer(getTargetUUID(uuid));
-        if (info == null) return "none";
-        return info.fbtMode.name();
-    }
-
-    private FiguraVec3 fetchHeadPos(String uuid) {
-        VRBodyPartData data = getBodyPartData("head", uuid);
-        if (data == null) return null;
-        return toFigura(data.getPos());
-    }
-
-    private FiguraVec3 fetchHeadDir(String uuid) {
-        VRBodyPartData data = getBodyPartData("head", uuid);
-        if (data == null) return null;
-        return toFigura(data.getDir());
-    }
-
-    private FiguraVec3 fetchHeadRot(String uuid) {
-        VRBodyPartData data = getBodyPartData("head", uuid);
-        if (data == null) return null;
-        return toFiguraRot(data);
-    }
-
-    private FiguraVec3 fetchHandPos(String hand, String uuid) {
-        VRBodyPartData data = getBodyPartData(hand, uuid);
-        if (data == null) return null;
-        return toFigura(data.getPos());
-    }
-
-    private FiguraVec3 fetchHandDir(String hand, String uuid) {
-        VRBodyPartData data = getBodyPartData(hand, uuid);
-        if (data == null) return null;
-        return toFigura(data.getDir());
-    }
-
-    private FiguraVec3 fetchHandRot(String hand, String uuid) {
-        VRBodyPartData data = getBodyPartData(hand, uuid);
-        if (data == null) return null;
-        return toFiguraRot(data);
-    }
-
-    private FiguraVec3 fetchBodyPartPos(String bodyPart, String uuid) {
-        VRBodyPartData data = getBodyPartData(bodyPart, uuid);
-        if (data == null) return null;
-        return toFigura(data.getPos());
-    }
-
-    private FiguraVec3 fetchBodyPartDir(String bodyPart, String uuid) {
-        VRBodyPartData data = getBodyPartData(bodyPart, uuid);
-        if (data == null) return null;
-        return toFigura(data.getDir());
-    }
-
-    private FiguraVec3 fetchBodyPartRot(String bodyPart, String uuid) {
-        VRBodyPartData data = getBodyPartData(bodyPart, uuid);
-        if (data == null) return null;
-        return toFiguraRot(data);
+        Quaternionfc rot = data.getRotation();
+        Vector3f euler = new Vector3f();
+        euler.x = org.joml.Math.atan2(rot.y() * rot.z() + rot.w() * rot.x(),
+                0.5f - rot.x() * rot.x() - rot.y() * rot.y());
+        euler.y = org.joml.Math.safeAsin(-2.0f * (rot.x() * rot.z() - rot.w() * rot.y()));
+        euler.z = org.joml.Math.atan2(rot.x() * rot.y() + rot.w() * rot.z(),
+                0.5f - rot.y() * rot.y() - rot.z() * rot.z());
+        return FiguraVec3.of(-euler.x, euler.y - Math.PI, euler.z).toDeg();
     }
 
     @LuaWhitelist
@@ -182,13 +111,9 @@ public class VivecraftCompatAPI extends BaseCompatAPI {
                     )
             }
     )
-    public Boolean isVRActive() {
-        return checkVRActive(null);
-    }
-
-    @LuaWhitelist
     public Boolean isVRActive(String uuid) {
-        return checkVRActive(uuid);
+        if (players == null) return false;
+        return players.isVRPlayer(getTargetUUID(uuid));
     }
 
     @LuaWhitelist
@@ -203,13 +128,9 @@ public class VivecraftCompatAPI extends BaseCompatAPI {
                     )
             }
     )
-    public Boolean isSeated() {
-        return checkSeated(null);
-    }
-
-    @LuaWhitelist
     public Boolean isSeated(String uuid) {
-        return checkSeated(uuid);
+        if (players == null) return false;
+        return players.isVRAndSeated(getTargetUUID(uuid));
     }
 
     @LuaWhitelist
@@ -224,13 +145,9 @@ public class VivecraftCompatAPI extends BaseCompatAPI {
                     )
             }
     )
-    public Boolean isLeftHanded() {
-        return checkLeftHanded(null);
-    }
-
-    @LuaWhitelist
     public Boolean isLeftHanded(String uuid) {
-        return checkLeftHanded(uuid);
+        if (players == null) return false;
+        return players.isVRAndLeftHanded(getTargetUUID(uuid));
     }
 
     @LuaWhitelist
@@ -245,13 +162,11 @@ public class VivecraftCompatAPI extends BaseCompatAPI {
                     )
             }
     )
-    public Float getWorldScale() {
-        return fetchWorldScale(null);
-    }
-
-    @LuaWhitelist
     public Float getWorldScale(String uuid) {
-        return fetchWorldScale(uuid);
+        if (players == null) return 1.0f;
+        ClientVRPlayers.RotInfo info = players.getRotationsForPlayer(getTargetUUID(uuid));
+        if (info == null) return 1.0f;
+        return info.worldScale;
     }
 
     @LuaWhitelist
@@ -266,13 +181,11 @@ public class VivecraftCompatAPI extends BaseCompatAPI {
                     )
             }
     )
-    public String getFBTMode() {
-        return fetchFBTMode(null);
-    }
-
-    @LuaWhitelist
     public String getFBTMode(String uuid) {
-        return fetchFBTMode(uuid);
+        if (players == null) return "none";
+        ClientVRPlayers.RotInfo info = players.getRotationsForPlayer(getTargetUUID(uuid));
+        if (info == null) return "none";
+        return info.fbtMode.name();
     }
 
     @LuaWhitelist
@@ -287,13 +200,10 @@ public class VivecraftCompatAPI extends BaseCompatAPI {
                     )
             }
     )
-    public FiguraVec3 getHeadPos() {
-        return fetchHeadPos(null);
-    }
-
-    @LuaWhitelist
     public FiguraVec3 getHeadPos(String uuid) {
-        return fetchHeadPos(uuid);
+        VRBodyPartData data = getBodyPartData("head", uuid);
+        if (data == null) return null;
+        return toFigura(data.getPos());
     }
 
     @LuaWhitelist
@@ -308,13 +218,10 @@ public class VivecraftCompatAPI extends BaseCompatAPI {
                     )
             }
     )
-    public FiguraVec3 getHeadDir() {
-        return fetchHeadDir(null);
-    }
-
-    @LuaWhitelist
     public FiguraVec3 getHeadDir(String uuid) {
-        return fetchHeadDir(uuid);
+        VRBodyPartData data = getBodyPartData("head", uuid);
+        if (data == null) return null;
+        return toFigura(data.getDir());
     }
 
     @LuaWhitelist
@@ -329,13 +236,10 @@ public class VivecraftCompatAPI extends BaseCompatAPI {
                     )
             }
     )
-    public FiguraVec3 getHeadRot() {
-        return fetchHeadRot(null);
-    }
-
-    @LuaWhitelist
     public FiguraVec3 getHeadRot(String uuid) {
-        return fetchHeadRot(uuid);
+        VRBodyPartData data = getBodyPartData("head", uuid);
+        if (data == null) return null;
+        return toFiguraRot(data);
     }
 
     @LuaWhitelist
@@ -352,13 +256,10 @@ public class VivecraftCompatAPI extends BaseCompatAPI {
                     )
             }
     )
-    public FiguraVec3 getHandPos(@LuaNotNil String hand) {
-        return fetchHandPos(hand, null);
-    }
-
-    @LuaWhitelist
     public FiguraVec3 getHandPos(@LuaNotNil String hand, String uuid) {
-        return fetchHandPos(hand, uuid);
+        VRBodyPartData data = getBodyPartData(hand, uuid);
+        if (data == null) return null;
+        return toFigura(data.getPos());
     }
 
     @LuaWhitelist
@@ -375,13 +276,10 @@ public class VivecraftCompatAPI extends BaseCompatAPI {
                     )
             }
     )
-    public FiguraVec3 getHandDir(@LuaNotNil String hand) {
-        return fetchHandDir(hand, null);
-    }
-
-    @LuaWhitelist
     public FiguraVec3 getHandDir(@LuaNotNil String hand, String uuid) {
-        return fetchHandDir(hand, uuid);
+        VRBodyPartData data = getBodyPartData(hand, uuid);
+        if (data == null) return null;
+        return toFigura(data.getDir());
     }
 
     @LuaWhitelist
@@ -398,13 +296,10 @@ public class VivecraftCompatAPI extends BaseCompatAPI {
                     )
             }
     )
-    public FiguraVec3 getHandRot(@LuaNotNil String hand) {
-        return fetchHandRot(hand, null);
-    }
-
-    @LuaWhitelist
     public FiguraVec3 getHandRot(@LuaNotNil String hand, String uuid) {
-        return fetchHandRot(hand, uuid);
+        VRBodyPartData data = getBodyPartData(hand, uuid);
+        if (data == null) return null;
+        return toFiguraRot(data);
     }
 
     @LuaWhitelist
@@ -421,13 +316,10 @@ public class VivecraftCompatAPI extends BaseCompatAPI {
                     )
             }
     )
-    public FiguraVec3 getBodyPartPos(@LuaNotNil String bodyPart) {
-        return fetchBodyPartPos(bodyPart, null);
-    }
-
-    @LuaWhitelist
     public FiguraVec3 getBodyPartPos(@LuaNotNil String bodyPart, String uuid) {
-        return fetchBodyPartPos(bodyPart, uuid);
+        VRBodyPartData data = getBodyPartData(bodyPart, uuid);
+        if (data == null) return null;
+        return toFigura(data.getPos());
     }
 
     @LuaWhitelist
@@ -444,13 +336,10 @@ public class VivecraftCompatAPI extends BaseCompatAPI {
                     )
             }
     )
-    public FiguraVec3 getBodyPartDir(@LuaNotNil String bodyPart) {
-        return fetchBodyPartDir(bodyPart, null);
-    }
-
-    @LuaWhitelist
     public FiguraVec3 getBodyPartDir(@LuaNotNil String bodyPart, String uuid) {
-        return fetchBodyPartDir(bodyPart, uuid);
+        VRBodyPartData data = getBodyPartData(bodyPart, uuid);
+        if (data == null) return null;
+        return toFigura(data.getDir());
     }
 
     @LuaWhitelist
@@ -467,13 +356,43 @@ public class VivecraftCompatAPI extends BaseCompatAPI {
                     )
             }
     )
-    public FiguraVec3 getBodyPartRot(@LuaNotNil String bodyPart) {
-        return fetchBodyPartRot(bodyPart, null);
+    public FiguraVec3 getBodyPartRot(@LuaNotNil String bodyPart, String uuid) {
+        VRBodyPartData data = getBodyPartData(bodyPart, uuid);
+        if (data == null) return null;
+        return toFiguraRot(data);
     }
 
     @LuaWhitelist
-    public FiguraVec3 getBodyPartRot(@LuaNotNil String bodyPart, String uuid) {
-        return fetchBodyPartRot(bodyPart, uuid);
+    @LuaMethodDoc(
+            value = "silly.compats.vivecraft.get_pose_data",
+            overloads = {
+                    @LuaMethodOverload(returnType = Map.class),
+                    @LuaMethodOverload(
+                            argumentTypes = String.class,
+                            argumentNames = "uuid",
+                            returnType = Map.class
+                    )
+            }
+    )
+    public Map<String, Object> getPoseData(String uuid) {
+        VRPose pose = getPose(uuid);
+        if (pose == null) return null;
+        Map<String, Object> data = new HashMap<>();
+        data.put("fbtMode", pose.getFBTMode().name());
+        data.put("leftHanded", pose.isLeftHanded());
+        data.put("seated", pose.isSeated());
+        for (VRBodyPart part : VRBodyPart.values()) {
+            if (!part.availableInMode(pose.getFBTMode())) continue;
+            Map<String, Object> partData = new HashMap<>();
+            VRBodyPartData bodyData = pose.getBodyPartData(part);
+            partData.put("pos", toFigura(bodyData.getPos()));
+            partData.put("rot", toFiguraRot(bodyData));
+            partData.put("dir", toFigura(bodyData.getDir()));
+            Quaternionfc q = bodyData.getRotation();
+            partData.put("rot4", FiguraVec4.of(q.x(), q.y(), q.z(), q.w()));
+            data.put(part.name().toLowerCase(), partData);
+        }
+        return data;
     }
 
     @LuaWhitelist

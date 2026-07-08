@@ -171,6 +171,10 @@ dependencies {
     modstitchModImplementation("maven.modrinth:9eGKb6K1:${svc_version}")
     modstitchModImplementation("de.maxhenkel.voicechat:voicechat-api:${voicechat_api_version}")
 
+    // Vivecraft official Mod API (since Vivecraft 1.3.0)
+    var vivecraft_version = property("deps.vivecraft") as String
+    modstitchModImplementation("maven.modrinth:vivecraft:${vivecraft_version}")
+
 
 //    modstitchCompileOnly(figura("common-mojmap"))
     modstitchModImplementation("com.github.FiguraMC.luaj:luaj-core:$luaj_version-figura")

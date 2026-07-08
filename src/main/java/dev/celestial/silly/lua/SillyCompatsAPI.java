@@ -16,12 +16,15 @@ import java.util.Map;
 public class SillyCompatsAPI {
     private static final Map<String, SillyCompatDefinition> compats = new HashMap<>() {{
        put("voicechat", new SillyCompatDefinition("voicechat", "svc", "dev.celestial.silly.lua.compat.VoicechatCompatAPI"));
+       put("vivecraft", new SillyCompatDefinition("vivecraft", "vivecraft", "dev.celestial.silly.lua.compat.VivecraftCompatAPI"));
     }};
     private final Avatar avatar;
     private final FiguraLuaRuntime runtime;
     private final Map<String, BaseCompatAPI> instances = new HashMap<>();
     @LuaWhitelist
     public BaseCompatAPI svc; // for print()
+    @LuaWhitelist
+    public BaseCompatAPI vivecraft; // for print()
 
     public static List<Class<?>> getLoaded() {
         var list = new ArrayList<Class<?>>();

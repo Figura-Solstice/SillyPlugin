@@ -35,5 +35,6 @@ public class FiguraDocsManagerMixin {
 
         NAME_MAP.put(SillyEnums.GUI_ELEMENT.class, "SillyGUIElement");
         NAME_MAP.put(SillyEnums.FORMAT_LEVEL.class, "SillyFormatLevel");
+        NAME_MAP.put(SillyEnums.VR_BODY_PART.class, "SillyVRBodyPart");
     }
 }

@@ -128,6 +128,12 @@ public class FiguraListDocsMixin {
                     ret.add(value.name());
                 return ret;
             }, "SillyFormatLevel", "silly_format_level", 1);
+            silly$addToDocs("SILLY_VR_BODY_PART", () -> {
+                var ret = new LinkedHashSet<String>();
+                for (var value : SillyEnums.VR_BODY_PART.values())
+                    ret.add(value.name());
+                return ret;
+            }, "SillyVRBodyPart", "silly_vr_body_part", 1);
         } catch (Throwable e) {
             throw new RuntimeException(e);
         }

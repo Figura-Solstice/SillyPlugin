@@ -52,13 +52,13 @@
     "figura.docs.silly.compats.vivecraft.get_head_pos": "Returns the position of the VR headset in world space.",
     "figura.docs.silly.compats.vivecraft.get_head_dir": "Returns the look direction of the VR headset.",
     "figura.docs.silly.compats.vivecraft.get_head_rot": "Returns the rotation of the VR headset as a Vector3 of pitch, yaw, and roll.",
-    "figura.docs.silly.compats.vivecraft.get_hand_pos": "Returns the position of the given hand or body part in world space.\nValid names include: head, main_hand, off_hand, left_foot, right_foot, waist, left_knee, right_knee, left_elbow, right_elbow.",
-    "figura.docs.silly.compats.vivecraft.get_hand_dir": "Returns the direction of the given hand or body part.\nValid names include: head, main_hand, off_hand, left_foot, right_foot, waist, left_knee, right_knee, left_elbow, right_elbow.",
-    "figura.docs.silly.compats.vivecraft.get_hand_rot": "Returns the rotation of the given hand or body part as a Vector3 of pitch, yaw, and roll.\nValid names include: head, main_hand, off_hand, left_foot, right_foot, waist, left_knee, right_knee, left_elbow, right_elbow.",
-    "figura.docs.silly.compats.vivecraft.get_body_part_pos": "Returns the position of the given body part in world space.\nValid names include: head, main_hand, off_hand, left_foot, right_foot, waist, left_knee, right_knee, left_elbow, right_elbow.",
-    "figura.docs.silly.compats.vivecraft.get_body_part_dir": "Returns the direction of the given body part.\nValid names include: head, main_hand, off_hand, left_foot, right_foot, waist, left_knee, right_knee, left_elbow, right_elbow.",
-    "figura.docs.silly.compats.vivecraft.get_body_part_rot": "Returns the rotation of the given body part as a Vector3 of pitch, yaw, and roll.\nValid names include: head, main_hand, off_hand, left_foot, right_foot, waist, left_knee, right_knee, left_elbow, right_elbow.",
-    "figura.docs.silly.compats.vivecraft.trigger_haptic": "Triggers a haptic pulse on the given body part.\nDuration, frequency, amplitude, and delay are optional and default to 0.1, 160, 1.0, and 0 respectively.",
+    "figura.docs.silly.compats.vivecraft.get_hand_pos": "Returns the position of the given hand or body part in world space.\nSee the SillyVRBodyPart enum for valid names.",
+    "figura.docs.silly.compats.vivecraft.get_hand_dir": "Returns the direction of the given hand or body part.\nSee the SillyVRBodyPart enum for valid names.",
+    "figura.docs.silly.compats.vivecraft.get_hand_rot": "Returns the rotation of the given hand or body part as a Vector3 of pitch, yaw, and roll.\nSee the SillyVRBodyPart enum for valid names.",
+    "figura.docs.silly.compats.vivecraft.get_body_part_pos": "Returns the position of the given body part in world space.\nSee the SillyVRBodyPart enum for valid names.",
+    "figura.docs.silly.compats.vivecraft.get_body_part_dir": "Returns the direction of the given body part.\nSee the SillyVRBodyPart enum for valid names.",
+    "figura.docs.silly.compats.vivecraft.get_body_part_rot": "Returns the rotation of the given body part as a Vector3 of pitch, yaw, and roll.\nSee the SillyVRBodyPart enum for valid names.",
+    "figura.docs.silly.compats.vivecraft.trigger_haptic": "Triggers a haptic pulse on the given body part.\nSee the SillyVRBodyPart enum for valid names.\nDuration, frequency, amplitude, and delay are optional and default to 0.1, 160, 1.0, and 0 respectively.",
 
     "figura.docs.silly.vehicle_field": "Accesses the current SillyVehicleAPI instance.",
     "figura.docs.silly.vehicle": "Silly's Vehicle API\nAccess with `silly.vehicle`",
@@ -116,6 +116,7 @@
     "figura.docs.events.move": "Event that's called when your velocity has been calculated.\nReturn a Vector3 to overwrite the velocity.\nRequires cheats to overwrite.",
 
     "figura.docs.enum.silly_gui_element": "List of valid GUI elements that can be disabled in Sillyplugin.",
+    "figura.docs.enum.silly_vr_body_part": "List of valid VR body part names for Vivecraft compatibility methods.",
 
     "figura.docs.collection": "Various useful functions for tables",
     "figura.docs.silly.collection": "The local instance of CollectionAPI",

@@ -1,5 +1,6 @@
 package dev.celestial.silly.lua.compat;
 
+import dev.celestial.silly.SillyEnums;
 import net.minecraft.world.phys.Vec3;
 import org.figuramc.figura.lua.FiguraLuaRuntime;
 import org.figuramc.figura.lua.LuaNotNil;
@@ -128,7 +129,7 @@ public class VivecraftCompatAPI extends BaseCompatAPI {
     @LuaMethodDoc(
             value = "silly.compats.vivecraft.get_hand_pos",
             overloads = @LuaMethodOverload(
-                    argumentTypes = String.class,
+                    argumentTypes = SillyEnums.VR_BODY_PART.class,
                     argumentNames = "hand"
             )
     )
@@ -142,7 +143,7 @@ public class VivecraftCompatAPI extends BaseCompatAPI {
     @LuaMethodDoc(
             value = "silly.compats.vivecraft.get_hand_dir",
             overloads = @LuaMethodOverload(
-                    argumentTypes = String.class,
+                    argumentTypes = SillyEnums.VR_BODY_PART.class,
                     argumentNames = "hand"
             )
     )
@@ -156,7 +157,7 @@ public class VivecraftCompatAPI extends BaseCompatAPI {
     @LuaMethodDoc(
             value = "silly.compats.vivecraft.get_hand_rot",
             overloads = @LuaMethodOverload(
-                    argumentTypes = String.class,
+                    argumentTypes = SillyEnums.VR_BODY_PART.class,
                     argumentNames = "hand"
             )
     )
@@ -170,7 +171,7 @@ public class VivecraftCompatAPI extends BaseCompatAPI {
     @LuaMethodDoc(
             value = "silly.compats.vivecraft.get_body_part_pos",
             overloads = @LuaMethodOverload(
-                    argumentTypes = String.class,
+                    argumentTypes = SillyEnums.VR_BODY_PART.class,
                     argumentNames = "bodyPart"
             )
     )
@@ -184,7 +185,7 @@ public class VivecraftCompatAPI extends BaseCompatAPI {
     @LuaMethodDoc(
             value = "silly.compats.vivecraft.get_body_part_dir",
             overloads = @LuaMethodOverload(
-                    argumentTypes = String.class,
+                    argumentTypes = SillyEnums.VR_BODY_PART.class,
                     argumentNames = "bodyPart"
             )
     )
@@ -198,7 +199,7 @@ public class VivecraftCompatAPI extends BaseCompatAPI {
     @LuaMethodDoc(
             value = "silly.compats.vivecraft.get_body_part_rot",
             overloads = @LuaMethodOverload(
-                    argumentTypes = String.class,
+                    argumentTypes = SillyEnums.VR_BODY_PART.class,
                     argumentNames = "bodyPart"
             )
     )
@@ -212,7 +213,7 @@ public class VivecraftCompatAPI extends BaseCompatAPI {
     @LuaMethodDoc(
             value = "silly.compats.vivecraft.trigger_haptic",
             overloads = @LuaMethodOverload(
-                    argumentTypes = {String.class, Float.class, Float.class, Float.class, Float.class},
+                    argumentTypes = {SillyEnums.VR_BODY_PART.class, Float.class, Float.class, Float.class, Float.class},
                     argumentNames = {"bodyPart", "duration", "frequency", "amplitude", "delay"}
             )
     )

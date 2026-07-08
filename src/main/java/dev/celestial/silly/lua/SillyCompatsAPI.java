@@ -5,6 +5,8 @@ import dev.celestial.silly.lua.compat.BaseCompatAPI;
 import org.figuramc.figura.avatar.Avatar;
 import org.figuramc.figura.lua.FiguraLuaRuntime;
 import org.figuramc.figura.lua.LuaWhitelist;
+import org.figuramc.figura.lua.docs.LuaFieldDoc;
+import org.figuramc.figura.lua.docs.LuaTypeDoc;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
@@ -13,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 
 @LuaWhitelist
+@LuaTypeDoc(name = "SillyCompatsAPI", value = "silly.compats")
 public class SillyCompatsAPI {
     private static final Map<String, SillyCompatDefinition> compats = new HashMap<>() {{
        put("voicechat", new SillyCompatDefinition("voicechat", "svc", "dev.celestial.silly.lua.compat.VoicechatCompatAPI"));
@@ -22,8 +25,10 @@ public class SillyCompatsAPI {
     private final FiguraLuaRuntime runtime;
     private final Map<String, BaseCompatAPI> instances = new HashMap<>();
     @LuaWhitelist
+    @LuaFieldDoc("silly.compats.svc")
     public BaseCompatAPI svc; // for print()
     @LuaWhitelist
+    @LuaFieldDoc("silly.compats.vivecraft")
     public BaseCompatAPI vivecraft; // for print()
 
     public static List<Class<?>> getLoaded() {

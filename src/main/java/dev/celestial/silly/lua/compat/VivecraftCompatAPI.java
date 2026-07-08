@@ -4,6 +4,9 @@ import net.minecraft.world.phys.Vec3;
 import org.figuramc.figura.lua.FiguraLuaRuntime;
 import org.figuramc.figura.lua.LuaNotNil;
 import org.figuramc.figura.lua.LuaWhitelist;
+import org.figuramc.figura.lua.docs.LuaMethodDoc;
+import org.figuramc.figura.lua.docs.LuaMethodOverload;
+import org.figuramc.figura.lua.docs.LuaTypeDoc;
 import org.figuramc.figura.math.vector.FiguraVec3;
 import org.luaj.vm2.LuaTable;
 import org.vivecraft.api.client.VRClientAPI;
@@ -12,6 +15,7 @@ import org.vivecraft.api.data.VRBodyPartData;
 import org.vivecraft.api.data.VRPose;
 
 @LuaWhitelist
+@LuaTypeDoc(name = "VivecraftCompatAPI", value = "silly.compats.vivecraft")
 public class VivecraftCompatAPI extends BaseCompatAPI {
     private final VRClientAPI api;
 
@@ -62,40 +66,47 @@ public class VivecraftCompatAPI extends BaseCompatAPI {
     }
 
     @LuaWhitelist
+    @LuaMethodDoc("silly.compats.vivecraft.is_vr_initialized")
     public Boolean isVRInitialized() {
         return api != null && api.isVRInitialized();
     }
 
     @LuaWhitelist
+    @LuaMethodDoc("silly.compats.vivecraft.is_vr_active")
     public Boolean isVRActive() {
         return api != null && api.isVRActive();
     }
 
     @LuaWhitelist
+    @LuaMethodDoc("silly.compats.vivecraft.is_seated")
     public Boolean isSeated() {
         if (api == null) return false;
         return api.isSeated();
     }
 
     @LuaWhitelist
+    @LuaMethodDoc("silly.compats.vivecraft.is_left_handed")
     public Boolean isLeftHanded() {
         if (api == null) return false;
         return api.isLeftHanded();
     }
 
     @LuaWhitelist
+    @LuaMethodDoc("silly.compats.vivecraft.get_world_scale")
     public Float getWorldScale() {
         if (api == null) return 1.0f;
         return api.getWorldScale();
     }
 
     @LuaWhitelist
+    @LuaMethodDoc("silly.compats.vivecraft.get_fbt_mode")
     public String getFBTMode() {
         if (api == null) return "none";
         return api.getFBTMode().name();
     }
 
     @LuaWhitelist
+    @LuaMethodDoc("silly.compats.vivecraft.get_head_pos")
     public FiguraVec3 getHeadPos() {
         VRBodyPartData data = getBodyPartData("head");
         if (data == null) return null;
@@ -103,6 +114,7 @@ public class VivecraftCompatAPI extends BaseCompatAPI {
     }
 
     @LuaWhitelist
+    @LuaMethodDoc("silly.compats.vivecraft.get_head_dir")
     public FiguraVec3 getHeadDir() {
         VRBodyPartData data = getBodyPartData("head");
         if (data == null) return null;
@@ -110,6 +122,7 @@ public class VivecraftCompatAPI extends BaseCompatAPI {
     }
 
     @LuaWhitelist
+    @LuaMethodDoc("silly.compats.vivecraft.get_head_rot")
     public LuaTable getHeadRot() {
         VRBodyPartData data = getBodyPartData("head");
         if (data == null) return null;
@@ -117,6 +130,13 @@ public class VivecraftCompatAPI extends BaseCompatAPI {
     }
 
     @LuaWhitelist
+    @LuaMethodDoc(
+            value = "silly.compats.vivecraft.get_hand_pos",
+            overloads = @LuaMethodOverload(
+                    argumentTypes = String.class,
+                    argumentNames = "hand"
+            )
+    )
     public FiguraVec3 getHandPos(@LuaNotNil String hand) {
         VRBodyPartData data = getBodyPartData(hand);
         if (data == null) return null;
@@ -124,6 +144,13 @@ public class VivecraftCompatAPI extends BaseCompatAPI {
     }
 
     @LuaWhitelist
+    @LuaMethodDoc(
+            value = "silly.compats.vivecraft.get_hand_dir",
+            overloads = @LuaMethodOverload(
+                    argumentTypes = String.class,
+                    argumentNames = "hand"
+            )
+    )
     public FiguraVec3 getHandDir(@LuaNotNil String hand) {
         VRBodyPartData data = getBodyPartData(hand);
         if (data == null) return null;
@@ -131,6 +158,13 @@ public class VivecraftCompatAPI extends BaseCompatAPI {
     }
 
     @LuaWhitelist
+    @LuaMethodDoc(
+            value = "silly.compats.vivecraft.get_hand_rot",
+            overloads = @LuaMethodOverload(
+                    argumentTypes = String.class,
+                    argumentNames = "hand"
+            )
+    )
     public LuaTable getHandRot(@LuaNotNil String hand) {
         VRBodyPartData data = getBodyPartData(hand);
         if (data == null) return null;
@@ -138,6 +172,13 @@ public class VivecraftCompatAPI extends BaseCompatAPI {
     }
 
     @LuaWhitelist
+    @LuaMethodDoc(
+            value = "silly.compats.vivecraft.get_body_part_pos",
+            overloads = @LuaMethodOverload(
+                    argumentTypes = String.class,
+                    argumentNames = "bodyPart"
+            )
+    )
     public FiguraVec3 getBodyPartPos(@LuaNotNil String bodyPart) {
         VRBodyPartData data = getBodyPartData(bodyPart);
         if (data == null) return null;
@@ -145,6 +186,13 @@ public class VivecraftCompatAPI extends BaseCompatAPI {
     }
 
     @LuaWhitelist
+    @LuaMethodDoc(
+            value = "silly.compats.vivecraft.get_body_part_dir",
+            overloads = @LuaMethodOverload(
+                    argumentTypes = String.class,
+                    argumentNames = "bodyPart"
+            )
+    )
     public FiguraVec3 getBodyPartDir(@LuaNotNil String bodyPart) {
         VRBodyPartData data = getBodyPartData(bodyPart);
         if (data == null) return null;
@@ -152,6 +200,13 @@ public class VivecraftCompatAPI extends BaseCompatAPI {
     }
 
     @LuaWhitelist
+    @LuaMethodDoc(
+            value = "silly.compats.vivecraft.get_body_part_rot",
+            overloads = @LuaMethodOverload(
+                    argumentTypes = String.class,
+                    argumentNames = "bodyPart"
+            )
+    )
     public LuaTable getBodyPartRot(@LuaNotNil String bodyPart) {
         VRBodyPartData data = getBodyPartData(bodyPart);
         if (data == null) return null;
@@ -159,6 +214,13 @@ public class VivecraftCompatAPI extends BaseCompatAPI {
     }
 
     @LuaWhitelist
+    @LuaMethodDoc(
+            value = "silly.compats.vivecraft.trigger_haptic",
+            overloads = @LuaMethodOverload(
+                    argumentTypes = {String.class, Float.class, Float.class, Float.class, Float.class},
+                    argumentNames = {"bodyPart", "duration", "frequency", "amplitude", "delay"}
+            )
+    )
     public void triggerHaptic(@LuaNotNil String bodyPart, Float duration, Float frequency, Float amplitude, Float delay) {
         if (api == null || !api.isVRActive()) return;
         VRBodyPart part = parseBodyPart(bodyPart);

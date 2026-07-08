@@ -8,7 +8,6 @@ import org.figuramc.figura.lua.docs.LuaMethodDoc;
 import org.figuramc.figura.lua.docs.LuaMethodOverload;
 import org.figuramc.figura.lua.docs.LuaTypeDoc;
 import org.figuramc.figura.math.vector.FiguraVec3;
-import org.luaj.vm2.LuaTable;
 import org.vivecraft.api.client.VRClientAPI;
 import org.vivecraft.api.data.VRBodyPart;
 import org.vivecraft.api.data.VRBodyPartData;
@@ -57,12 +56,8 @@ public class VivecraftCompatAPI extends BaseCompatAPI {
         return FiguraVec3.of(vec.x, vec.y, vec.z);
     }
 
-    private static LuaTable rotToTable(VRBodyPartData data) {
-        LuaTable tbl = new LuaTable();
-        tbl.set("pitch", data.getPitch());
-        tbl.set("yaw", data.getYaw());
-        tbl.set("roll", data.getRoll());
-        return tbl;
+    private static FiguraVec3 toFiguraRot(VRBodyPartData data) {
+        return FiguraVec3.of(data.getPitch(), data.getYaw(), data.getRoll());
     }
 
     @LuaWhitelist
@@ -123,10 +118,10 @@ public class VivecraftCompatAPI extends BaseCompatAPI {
 
     @LuaWhitelist
     @LuaMethodDoc("silly.compats.vivecraft.get_head_rot")
-    public LuaTable getHeadRot() {
+    public FiguraVec3 getHeadRot() {
         VRBodyPartData data = getBodyPartData("head");
         if (data == null) return null;
-        return rotToTable(data);
+        return toFiguraRot(data);
     }
 
     @LuaWhitelist
@@ -165,10 +160,10 @@ public class VivecraftCompatAPI extends BaseCompatAPI {
                     argumentNames = "hand"
             )
     )
-    public LuaTable getHandRot(@LuaNotNil String hand) {
+    public FiguraVec3 getHandRot(@LuaNotNil String hand) {
         VRBodyPartData data = getBodyPartData(hand);
         if (data == null) return null;
-        return rotToTable(data);
+        return toFiguraRot(data);
     }
 
     @LuaWhitelist
@@ -207,10 +202,10 @@ public class VivecraftCompatAPI extends BaseCompatAPI {
                     argumentNames = "bodyPart"
             )
     )
-    public LuaTable getBodyPartRot(@LuaNotNil String bodyPart) {
+    public FiguraVec3 getBodyPartRot(@LuaNotNil String bodyPart) {
         VRBodyPartData data = getBodyPartData(bodyPart);
         if (data == null) return null;
-        return rotToTable(data);
+        return toFiguraRot(data);
     }
 
     @LuaWhitelist

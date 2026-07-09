@@ -14,11 +14,16 @@ import org.figuramc.figura.math.vector.FiguraVec3;
 import org.figuramc.figura.math.vector.FiguraVec4;
 import org.joml.Quaternionfc;
 import org.joml.Vector3f;
+import org.figuramc.figura.avatar.Avatar;
+import org.figuramc.figura.avatar.AvatarManager;
 import org.vivecraft.api.client.VRClientAPI;
 import org.vivecraft.api.data.VRBodyPart;
 import org.vivecraft.api.data.VRBodyPartData;
 import org.vivecraft.api.data.VRPose;
 import org.vivecraft.client.ClientVRPlayers;
+
+import dev.celestial.silly.lua.SillyAPI;
+import dev.celestial.silly.not_a_mixin.AvatarExtensions;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -29,6 +34,7 @@ import java.util.UUID;
 public class VivecraftCompatAPI extends BaseCompatAPI {
     private final VRClientAPI api;
     private final ClientVRPlayers players;
+    private boolean vivecraftAnim = true;
 
     public VivecraftCompatAPI(FiguraLuaRuntime runtime) {
         super(runtime);
@@ -404,6 +410,7 @@ public class VivecraftCompatAPI extends BaseCompatAPI {
             )
     )
     public void triggerHaptic(@LuaNotNil String bodyPart, Float duration, Float frequency, Float amplitude, Float delay) {
+        if (!avatar.isHost) return;
         if (api == null || !api.isVRActive()) return;
         VRBodyPart part = parseBodyPart(bodyPart);
         if (part == null) return;
@@ -412,5 +419,36 @@ public class VivecraftCompatAPI extends BaseCompatAPI {
         float amp = amplitude != null ? amplitude : 1.0f;
         float dly = delay != null ? delay : 0f;
         api.triggerHapticPulse(part, dur, freq, amp, dly);
+    }
+
+    @LuaWhitelist
+    @LuaMethodDoc(
+            value = "silly.compats.vivecraft.set_vivecraft_anim",
+            overloads = @LuaMethodOverload(
+                    argumentTypes = Boolean.class,
+                    argumentNames = "value"
+            )
+    )
+    public void setVivecraftAnim(@LuaNotNil Boolean value) {
+        if (!avatar.isHost) return;
+        this.vivecraftAnim = value;
+    }
+
+    @LuaWhitelist
+    @LuaMethodDoc("silly.compats.vivecraft.get_vivecraft_anim")
+    public Boolean getVivecraftAnim() {
+        return vivecraftAnim;
+    }
+
+    public static boolean shouldDoVivecraftAnim(UUID uuid) {
+        if (uuid == null) return true;
+        if (AvatarManager.panic) return true;
+        Avatar avatar = AvatarManager.getAvatarForPlayer(uuid);
+        if (avatar == null) return true;
+        SillyAPI silly = ((AvatarExtensions) avatar).silly$getSilly();
+        if (silly == null || silly.compats == null) return true;
+        Object api = silly.compats.vivecraft;
+        if (!(api instanceof VivecraftCompatAPI vivecraft)) return true;
+        return vivecraft.vivecraftAnim;
     }
 }

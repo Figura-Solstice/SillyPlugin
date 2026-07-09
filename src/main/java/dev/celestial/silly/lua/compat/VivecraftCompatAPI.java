@@ -430,7 +430,6 @@ public class VivecraftCompatAPI extends BaseCompatAPI {
             )
     )
     public void setVivecraftAnim(@LuaNotNil Boolean value) {
-        if (!avatar.isHost) return;
         this.vivecraftAnim = value;
     }
 

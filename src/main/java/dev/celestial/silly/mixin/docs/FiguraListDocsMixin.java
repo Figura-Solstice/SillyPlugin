@@ -61,7 +61,7 @@ public class FiguraListDocsMixin {
         Field f = silly$class.getDeclaredField("$VALUES");
         SillyUtil.Devlog("Get got");
         f.setAccessible(true);
-        SillyUtil.Devlog("Accessobile");
+        SillyUtil.Devlog("Accessible");
 
         Object base = silly$unsafe.staticFieldBase(f);
         SillyUtil.Devlog("Base {}", base);

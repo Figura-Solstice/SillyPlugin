@@ -130,6 +130,7 @@ public class SillyAPI {
 
     @AutoProperty
     @ReadOnly
+    @LuaFieldDoc("silly.compats")
     public SillyCompatsAPI compats;
 
     @LuaWhitelist

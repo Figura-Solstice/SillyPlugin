@@ -27,4 +27,17 @@ public class SillyEnums {
         HEAVY,
         AST
     }
+
+    public enum VR_BODY_PART {
+        HEAD,
+        MAIN_HAND,
+        OFF_HAND,
+        LEFT_FOOT,
+        RIGHT_FOOT,
+        WAIST,
+        LEFT_KNEE,
+        RIGHT_KNEE,
+        LEFT_ELBOW,
+        RIGHT_ELBOW
+    }
 }

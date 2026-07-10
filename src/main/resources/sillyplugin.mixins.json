@@ -16,6 +16,7 @@
         "MinecraftAccessor",
         "MinecraftClientMixin",
         "PlayerRendererMixin",
+        "compat.VivecraftVRPlayerModelMixin",
         "SoundBufferAccessor",
         "hud.BossHealthOverlayMixin",
         "hud.ChatComponentMixin",

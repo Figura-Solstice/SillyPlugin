@@ -72,6 +72,11 @@ modstitch {
             val aw = project.file("src/main/resources/sillyplugin.accesswidener")
             if (aw.exists())
                 accessWidenerPath = aw
+
+            mixin {
+                useLegacyMixinAp.set(true)
+                defaultRefmapName.set("sillyplugin-refmap.json")
+            }
         }
     }
 
@@ -103,7 +108,7 @@ modstitch {
     mixin { // re-enable if modstitch fixes mixins being added multiple times
         // You do not need to specify mixins in any mods.json/toml file if this is set to
         // true, it will automatically be generated.
-        addMixinsToModManifest = false
+        addMixinsToModManifest = true
 
 //        configs.register("sillyplugin")
 
@@ -181,6 +186,5 @@ dependencies {
     modstitchModImplementation("com.github.FiguraMC.luaj:luaj-jse:$luaj_version-figura")
     modstitchModImplementation("com.neovisionaries:nv-websocket-client:$nv_websocket_version")
     modstitchModImplementation("com.pngencoder:pngencoder:0.16.0")
-    modstitchJiJ("com.pngencoder:pngencoder:0.16.0")
 
 }

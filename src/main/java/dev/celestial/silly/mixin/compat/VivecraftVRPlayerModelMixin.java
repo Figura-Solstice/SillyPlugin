@@ -17,17 +17,24 @@ import java.util.UUID;
 @Mixin(value = {
         org.vivecraft.client.render.VRPlayerModel_WithArms.class,
         org.vivecraft.client.render.VRPlayerModel_WithArmsLegs.class
-}, remap = false)
+})
 public class VivecraftVRPlayerModelMixin {
 
     //? if >=1.21.4 {
     @Inject(
             method = "setupAnim(Lnet/minecraft/client/renderer/entity/state/PlayerRenderState;)V",
-            at = @At(
-                    value = "INVOKE",
-                    target = "Lorg/vivecraft/client/render/VRPlayerModel;setupAnim(Lnet/minecraft/client/renderer/entity/state/PlayerRenderState;)V",
-                    shift = At.Shift.AFTER
-            ),
+            at = {
+                    @At(
+                            value = "INVOKE",
+                            target = "Lorg/vivecraft/client/render/VRPlayerModel;setupAnim(Lnet/minecraft/client/renderer/entity/state/PlayerRenderState;)V",
+                            shift = At.Shift.AFTER
+                    ),
+                    @At(
+                            value = "INVOKE",
+                            target = "Lorg/vivecraft/client/render/VRPlayerModel_WithArms;setupAnim(Lnet/minecraft/client/renderer/entity/state/PlayerRenderState;)V",
+                            shift = At.Shift.AFTER
+                    )
+            },
             cancellable = true
     )
     private void silly$disableVivecraftAnim(PlayerRenderState state, CallbackInfo ci) {
@@ -41,11 +48,18 @@ public class VivecraftVRPlayerModelMixin {
     //?} else {
     /*@Inject(
             method = "setupAnim(Lnet/minecraft/world/entity/LivingEntity;FFFFF)V",
-            at = @At(
-                    value = "INVOKE",
-                    target = "Lorg/vivecraft/client/render/VRPlayerModel;setupAnim(Lnet/minecraft/world/entity/LivingEntity;FFFFF)V",
-                    shift = At.Shift.AFTER
-            ),
+            at = {
+                    @At(
+                            value = "INVOKE",
+                            target = "Lorg/vivecraft/client/render/VRPlayerModel;setupAnim(Lnet/minecraft/world/entity/LivingEntity;FFFFF)V",
+                            shift = At.Shift.AFTER
+                    ),
+                    @At(
+                            value = "INVOKE",
+                            target = "Lorg/vivecraft/client/render/VRPlayerModel_WithArms;setupAnim(Lnet/minecraft/world/entity/LivingEntity;FFFFF)V",
+                            shift = At.Shift.AFTER
+                    )
+            },
             cancellable = true
     )
     private <T extends LivingEntity> void silly$disableVivecraftAnim(T entity, float limbSwing, float limbSwingAmount, float ageInTicks, float netHeadYaw, float headPitch, CallbackInfo ci) {

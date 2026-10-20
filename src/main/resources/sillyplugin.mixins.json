@@ -90,5 +90,5 @@
         "luaj_memory.LuaStringMixin",
         "luaj_memory.LuaTableMixin",
         "ItemStackAPIMixin"
-    ],
+    ]
 }

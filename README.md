@@ -32,7 +32,7 @@ There are some exceptions:
 ## Contributing
 If you wish to contribute, you're welcome to. Here's some tips:
 - Where you'd normally run `./gradlew build` or something similar, instead run `./gradlew chiseledBuild`
-  - better yet, use the build script, `build.sh`. A Windows version of that script is currently pending merge.
+  - better yet, use the build script, `build.sh` or `build.bat`
   - The build script will output all jars into the folder `silly_out`.
 - Please **do not** refactor major parts of the codebase without at least checking with me first.
 - My motivation to review may sway to the whims of factors beyond both our comprehension, so review times on PRs may be slow.

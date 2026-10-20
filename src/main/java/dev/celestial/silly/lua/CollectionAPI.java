@@ -20,8 +20,11 @@ import org.luaj.vm2.lib.jse.CoerceLuaToJava;
 // modified to be (theoretically) more performant
 // (by making all the functions static), and fixed
 // documentation.
+
+// SillyCollectionAPI because having it be called
+// "CollectionAPI" makes it conflict with goofyplugin
 @LuaWhitelist
-@LuaTypeDoc(name = "CollectionAPI", value = "collection")
+@LuaTypeDoc(name = "SillyCollectionAPI", value = "collection")
 public class CollectionAPI {
     public static CollectionAPI Instance = new CollectionAPI();
 

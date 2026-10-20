@@ -1,12 +1,8 @@
 package dev.celestial.silly.mixin.docs;
 
 import dev.celestial.silly.SillyEnums;
-import dev.celestial.silly.lua.LuaGraphicsAPI;
-import dev.celestial.silly.lua.BackportsAPI;
-import dev.celestial.silly.lua.CollectionAPI;
-import dev.celestial.silly.lua.SillyAPI;
-import dev.celestial.silly.lua.SillyCompatsAPI;
-import dev.celestial.silly.lua.SillyProfiler;
+import dev.celestial.silly.lua.*;
+import dev.celestial.silly.lua.data.SillySoundEventData;
 import org.figuramc.figura.lua.docs.FiguraDocsManager;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -28,10 +24,26 @@ public class FiguraDocsManagerMixin {
     private static Map<Class<?>, String> NAME_MAP;
 
     static {
-        var sillyChildren = new ArrayList<Class<?>>();
-        sillyChildren.addAll(List.of(SillyAPI.class, BackportsAPI.class, SillyAPI.SillyVehicleAPI.class, SillyProfiler.class, LuaGraphicsAPI.class, CollectionAPI.class, SillyCompatsAPI.class));
-        sillyChildren.addAll(SillyCompatsAPI.getLoaded());
-        GLOBAL_CHILDREN.put("silly", sillyChildren);
+        // SillyCompatsAPI is deliberately not included here.
+        // the reason for this is that having documentation on it
+        // is practically useless. not only can we not properly
+        // type the fields on it, it also practically acts as
+        // a simple table.
+        //
+        // however, of course the loaded compats will be included.
+        var sillies = new ArrayList<>(List.of(
+                SillyAPI.class,
+                BackportsAPI.class,
+                SillyAPI.SillyVehicleAPI.class,
+                SillyProfiler.class,
+                LuaGraphicsAPI.class,
+                CollectionAPI.class,
+                SillySoundEventData.class
+        ));
+
+        sillies.addAll(SillyCompatsAPI.getLoaded());
+
+        GLOBAL_CHILDREN.put("silly", sillies);
 
         NAME_MAP.put(SillyEnums.GUI_ELEMENT.class, "SillyGUIElement");
         NAME_MAP.put(SillyEnums.FORMAT_LEVEL.class, "SillyFormatLevel");

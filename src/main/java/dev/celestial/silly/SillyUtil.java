@@ -2,7 +2,15 @@ package dev.celestial.silly;
 
 import com.mojang.authlib.GameProfile;
 import com.mojang.blaze3d.platform.NativeImage;
+import dev.celestial.silly.helper.CallerContext;
+import dev.celestial.silly.lua.BackportsAPI;
 import dev.celestial.silly.lua.SillyAPI;
+import dev.celestial.silly.luaj.LuaOOM;
+import dev.celestial.silly.luaj.LuaUncatchableError;
+import dev.celestial.silly.luaj.memory.AllocationTracker;
+import dev.celestial.silly.luaj.memory.AllocationTrackerImpl;
+import dev.celestial.silly.luaj.memory.StubAllocationTracker;
+import dev.celestial.silly.luaj.memory.UnrestrictedAllocationTracker;
 import dev.celestial.silly.mixin.MinecraftAccessor;
 import dev.celestial.silly.not_a_mixin.AvatarExtensions;
 import net.minecraft.client.Minecraft;
@@ -16,17 +24,21 @@ import org.figuramc.figura.FiguraMod;
 import org.figuramc.figura.avatar.Avatar;
 import org.figuramc.figura.avatar.AvatarManager;
 import org.figuramc.figura.mixin.render.TextureAtlasAccessor;
-import org.luaj.vm2.LuaError;
-import org.luaj.vm2.LuaTable;
-import org.luaj.vm2.LuaValue;
+import org.jetbrains.annotations.Nullable;
+import org.luaj.vm2.*;
+import org.luaj.vm2.lib.VarArgFunction;
+import org.spongepowered.asm.mixin.Unique;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 public class SillyUtil {
-    public static final boolean DEV_MODE = true;
+    //? if dev_mode {
+    /*public static final boolean DEV_MODE = true;
+    *///?} else {
+    public static final boolean DEV_MODE = false;
+    //?}
     public static Services services;
     public static Avatar getAvatar(String username) {
         UUID uuid = getUUID(username);
@@ -37,6 +49,39 @@ public class SillyUtil {
 
         return AvatarManager.getAvatarForPlayer(uuid);
     }
+
+    public static Optional<Avatar> getHostAvatar() {
+        return Optional.ofNullable(AvatarManager.getAvatarForPlayer(clientUUID()));
+    }
+
+
+    public static final long GRACE_PERIOD_TIME = 3000000000L;
+    public static final int GRACE_PERIOD_EXTRA = 128 * 1024;
+    public static Function<Avatar, AllocationTracker<LuaOOM>> allocate = (avatar) -> {
+        if (!SillySettings.MEMORY_TRACK.getBool()) return new StubAllocationTracker<>();
+        var max = avatar.permissions.get(SillyPermissions.MEMORY) * 1024;
+        if (max < 0) {
+            return new UnrestrictedAllocationTracker<>();
+        }
+        return new AllocationTrackerImpl<LuaOOM>(max, GRACE_PERIOD_TIME, GRACE_PERIOD_EXTRA, (reason)
+                -> new LuaOOM("Lua exceeded limit of " + max + "kb memory! " + (reason == AllocationTracker.ErrorReason.GRACE_EXPIRED
+                    ? "(grace period expired)"
+                    : "(overran grace period limit)")));
+    };
+
+    public static @Nullable AllocationTracker<LuaOOM> getAllocationTracker(UUID owner) {
+        Avatar avatar = AvatarManager.getAvatarForPlayer(owner);
+        if (avatar == null) return null;
+        return ((AvatarExtensions)avatar).silly$getAllocationTracker();
+    }
+
+    public static Optional<AllocationTracker<LuaOOM>> getExecutingAllocationTracker() {
+        var executing = BackportsAPI.callerStack.get().peek();
+        if (executing == null) return Optional.empty();
+        return Optional.ofNullable(getAllocationTracker(executing.getLeft()));
+    }
+
+    public static void nikoTricksTheJavaCompiler() throws LuaUncatchableError { }
 
     public static void logAsAvatar(Avatar avatar, Consumer<String> logFn, String msg) {
         logFn.accept("[" + avatar.entityName + "] " + msg);
@@ -116,9 +161,48 @@ public class SillyUtil {
         return FiguraMod.getLocalPlayerUUID();
     }
 
-    public static void Devlog(String message, Object... vars) {
+    public static LuaTable transformTableWithCaller(LuaTable table, UUID caller, UUID owner) {
+        return transformTableWithCaller(table, caller, owner, new HashSet<LuaTable>());
+    }
+
+    public static LuaTable transformTableWithCaller(LuaTable table, UUID caller, UUID owner, Set<LuaTable> visited) {
+        if (visited.contains(table))
+            return table; // no
+        visited.add(table);
+        LuaTable ret = new LuaTable();
+
+        for (LuaValue key : table.keys()) {
+            LuaValue value = table.rawget(key);
+            if (value.isfunction()) {
+                ret.rawset(key, transformFunctionWithCaller(value.checkfunction(), caller, owner));
+            } else if (value.istable()) {
+                ret.rawset(key, transformTableWithCaller(value.checktable(), caller, owner, visited));
+            } else {
+                ret.rawset(key, value);
+            }
+        }
+        return ret;
+    }
+
+    public static LuaValue transformFunctionWithCaller(LuaFunction func, UUID caller, UUID owner) {
+        return new VarArgFunction() {
+            @Override
+            public Varargs invoke(Varargs args) {
+                try(CallerContext ctx = BackportsAPI.openCallerContext(caller, owner, "TransformedFunction/" + func.hashCode())) {
+                    return func.invoke(args);
+                }
+            }
+
+            @Override
+            public String tojstring() {
+                return func.tojstring();
+            }
+        };
+    }
+
+    public static void Devlog(String format, Object... vars) {
         if (DEV_MODE && SillySettings.DEV_LOGS.getBool())
-            SillyPlugin.LOGGER.info(message, vars);
+            SillyPlugin.LOGGER.info(format, vars);
     }
 
     private static Class<?> roltClass;

@@ -15,7 +15,6 @@ import java.util.List;
 import java.util.Map;
 
 @LuaWhitelist
-@LuaTypeDoc(name = "SillyCompatsAPI", value = "silly.compats")
 public class SillyCompatsAPI {
     private static final Map<String, SillyCompatDefinition> compats = new HashMap<>() {{
        put("voicechat", new SillyCompatDefinition("voicechat", "svc", "dev.celestial.silly.lua.compat.VoicechatCompatAPI"));
@@ -25,11 +24,7 @@ public class SillyCompatsAPI {
     private final FiguraLuaRuntime runtime;
     private final Map<String, BaseCompatAPI> instances = new HashMap<>();
     @LuaWhitelist
-    @LuaFieldDoc("silly.compats.svc")
     public BaseCompatAPI svc; // for print()
-    @LuaWhitelist
-    @LuaFieldDoc("silly.compats.vivecraft")
-    public BaseCompatAPI vivecraft; // for print()
 
     public static List<Class<?>> getLoaded() {
         var list = new ArrayList<Class<?>>();

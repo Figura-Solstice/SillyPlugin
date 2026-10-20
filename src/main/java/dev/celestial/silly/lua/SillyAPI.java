@@ -1,23 +1,27 @@
 package dev.celestial.silly.lua;
 
-//? if >=1.21.1 {
+//? if >=1.20.4 {
 import com.mojang.authlib.yggdrasil.ProfileResult;
 //?} else {
 /*import com.mojang.authlib.GameProfile;
 *///?}
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.brigadier.StringReader;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.pngencoder.PngEncoder;
 import dev.celestial.silly.*;
 import dev.celestial.silly.annotations.*;
 import dev.celestial.silly.helper.*;
 import dev.celestial.silly.helper.window.ActiveWindowFetcher;
 import dev.celestial.silly.helper.window.NullWindowFetcher;
+import dev.celestial.silly.luaj.memory.AllocationTracker;
 import dev.celestial.silly.mixin.AvatarAccessor;
 import dev.celestial.silly.mixin.LuaScriptParserInvokers;
 import dev.celestial.silly.mixin.RuntimeAccessor;
+import dev.celestial.silly.mixin.accessor.BossOverlayAccessor;
 import dev.celestial.silly.not_a_mixin.AvatarExtensions;
 import net.minecraft.ChatFormatting;
+import net.minecraft.ReportedException;
 import net.minecraft.Util;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
@@ -37,14 +41,14 @@ import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Abilities;
+import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.EntityBlock;
-import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import org.apache.commons.lang3.ObjectUtils;
-import org.apache.commons.lang3.tuple.Pair;
 import org.figuramc.figura.FiguraMod;
 import org.figuramc.figura.avatar.Avatar;
 import org.figuramc.figura.avatar.AvatarManager;
@@ -54,7 +58,7 @@ import org.figuramc.figura.config.Configs;
 import org.figuramc.figura.font.Emojis;
 import org.figuramc.figura.gui.widgets.lists.AvatarList;
 import org.figuramc.figura.lua.*;
-import org.figuramc.figura.lua.api.ClientAPI;
+import org.figuramc.figura.lua.api.data.FiguraInputStream;
 import org.figuramc.figura.lua.api.entity.PlayerAPI;
 import org.figuramc.figura.lua.api.ping.PingFunction;
 import org.figuramc.figura.lua.api.world.BlockStateAPI;
@@ -72,21 +76,24 @@ import org.figuramc.figura.parsers.LuaScriptParser;
 import org.figuramc.figura.permissions.PermissionManager;
 import org.figuramc.figura.permissions.PermissionPack;
 import org.figuramc.figura.permissions.Permissions;
-import org.figuramc.figura.utils.ColorUtils;
-import org.figuramc.figura.utils.EntityUtils;
-import org.figuramc.figura.utils.LuaUtils;
-import org.figuramc.figura.utils.TextUtils;
+import org.figuramc.figura.utils.*;
 import org.jetbrains.annotations.Nullable;
 import org.luaj.vm2.*;
 import org.luaj.vm2.ast.Chunk;
 import org.luaj.vm2.ast.NameResolver;
 import org.luaj.vm2.lib.ZeroArgFunction;
 import org.luaj.vm2.parser.LuaParser;
+import org.lwjgl.glfw.GLFW;
+import org.lwjgl.system.MemoryStack;
+import org.lwjgl.util.tinyfd.TinyFileDialogs;
 
 import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.nio.file.Path;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
@@ -98,8 +105,9 @@ public class SillyAPI {
     public final Minecraft minecraft;
     public final FiguraLuaRuntime runtime;
     public Overridable<Boolean> mayFly = new Overridable<>();
-    public Overridable<Boolean> gravity = new Overridable<>();
+    public Overridable<Double> gravity = new Overridable<>();
     public Overridable<Boolean> friction = new Overridable<>();
+    public Overridable<Boolean> frictionInAir = new Overridable<>();
     public Overridable<Float> frictionValue = new Overridable<>();
     public Overridable<FiguraMat4> guiMat = new Overridable<>();
     public boolean disableEntityCollisions = false;
@@ -116,24 +124,61 @@ public class SillyAPI {
         this.minecraft = Minecraft.getInstance();
         this.backports = new BackportsAPI(runtime);
         this.compats = new SillyCompatsAPI(runtime);
+        this.profiler = new SillyProfiler(runtime.owner);
         local = avatar.isHost;
         ((AvatarExtensions)avatar).silly$setProfiler(profiler);
         if (local) SillyPlugin.hostInstance = this;
     }
 
     @LuaWhitelist
-    public SillyAPI setPlayerVisible(@LuaNotNil String player, Boolean visible) {
+    @LuaMethodDoc(
+            value = "silly.set_player_visible",
+            overloads = {
+                    @LuaMethodOverload(
+                            argumentNames = { "player", "visible" },
+                            argumentTypes = { String.class, Boolean.class },
+                            returnType = SillyAPI.class
+                    )
+            }
+    )
+    public SillyAPI setPlayerVisible(@LuaNotNil String player, @LuaNotNil Boolean visible) {
         if (visible) hiddenPlayers.remove(player);
         else hiddenPlayers.add(player);
         return this;
     }
 
-    @AutoProperty
-    @ReadOnly
+    @LuaWhitelist
+    @LuaMethodDoc("silly.get_memory_usage")
+    public long getMemoryUsage() {
+        var executing = SillyUtil.getExecutingAllocationTracker();
+        return executing.map(AllocationTracker::getTotal).orElse(0L);
+    }
+
+    @LuaWhitelist
+    @LuaMethodDoc(
+            value = "silly.get_alive_objects",
+            overloads = {
+                    @LuaMethodOverload(returnType = LuaTable.class)
+            }
+    )
+    public LuaTable getAliveObjects() {
+        LuaTable tbl = new LuaTable();
+        SillyUtil.getExecutingAllocationTracker().ifPresent(tracker -> {
+            tracker.findCulprits().forEach(tbl::set);
+        });
+        return SillyUtil.createReadOnlyLuaTable(tbl);
+    }
+
+    @LuaFieldDoc("silly.compats")
+    @AutoProperty @LuaReadOnly
     @LuaFieldDoc("silly.compats")
     public SillyCompatsAPI compats;
 
     @LuaWhitelist
+    @LuaMethodDoc(
+            value = "silly.is_player_visible",
+            overloads = {@LuaMethodOverload(returnType = Boolean.class)}
+    )
     public Boolean isPlayerVisible() {
         var hostInstance = SillyPlugin.hostInstance;
         if (hostInstance == null) return true;
@@ -141,13 +186,16 @@ public class SillyAPI {
     }
 
     @LuaFieldDoc("silly.profiler")
-    @AutoProperty @ReadOnly public SillyProfiler profiler = new SillyProfiler();
+    @AutoProperty @LuaReadOnly
+    public SillyProfiler profiler;
 
     @LuaFieldDoc("silly.backports")
-    @AutoProperty @ReadOnly public BackportsAPI backports;
+    @AutoProperty @LuaReadOnly
+    public BackportsAPI backports;
 
     @LuaFieldDoc("silly.collection")
-    @AutoProperty @ReadOnly public CollectionAPI collection = CollectionAPI.Instance;
+    @AutoProperty @LuaReadOnly
+    public CollectionAPI collection = CollectionAPI.Instance;
 
     public void onPanic(boolean panic) {
         if (!local) return;
@@ -158,9 +206,9 @@ public class SillyAPI {
             if (a.flying && !a.mayfly && this.mayFly.isOverridden() && this.mayFly.getValue()) {
                 a.flying = false;
             }
-            if (gravity.isOverridden())
+//            if (gravity.isOverridden())
                 //noinspection DataFlowIssue
-                minecraft.player.setNoGravity(!panic && gravity.getValue());
+//                minecraft.player.setNoGravity(!panic && gravity.getValue());
             if (friction.isOverridden())
                 //noinspection DataFlowIssue
                 minecraft.player.setDiscardFriction(!panic && friction.getValue());
@@ -192,6 +240,18 @@ public class SillyAPI {
         cheatExecutor(callback, true);
     }
 
+    private static String formatCodify(String input) {
+        return input.replaceAll("(.)", "§$1");
+    }
+
+
+    // some servers optimize the MOTD by removing
+    // formatting codes that do nothing. (COUGH COUGH
+    // PAPER).
+    // hence, "siypugi."
+    private static final String[] _sillyNegators = new String[] {"!sillyplugin", "!siypugi"};
+    private static final String[] _sillyEnablers = new String[] {"sillyplugin", "siypugi"};
+
     public void cheatExecutor(Consumer<LocalPlayer> callback, boolean mustBeHost) {
         if (!SillySettings.CHEATS.getBool()) return;
         if (mustBeHost && !local) return;
@@ -207,18 +267,188 @@ public class SillyAPI {
         // i don't know what circumstances, but it can happen.
         //noinspection ReassignedVariable,ConstantValue
         if (motd == null) motd = Component.empty();
+        var rawMotd = motd.getString();
+        for (var negator : _sillyNegators)
+            if (rawMotd.contains(formatCodify(negator))) return;
 
-        if (!(
-                minecraft.player.hasPermissions(2)
-                || minecraft.gameMode.getPlayerMode().isCreative()
-                || minecraft.isSingleplayer()
-                || motd.getString().contains("§s§i§l§l§y§p§l§u§g§i§n")
-                // some servers optimize the MOTD by removing
-                // formatting codes that do nothing. (COUGH COUGH
-                // PAPER).
-                || motd.getString().contains("§s§i§y§p§u§g§i")
-        ) || (motd.getString().contains("§!§s§i§l§l§y§p§l§u§g§i§n") || motd.getString().contains("§!§s§i§y§p§u§g§i"))) return;
+        if (Arrays.stream(_sillyEnablers).noneMatch(x -> rawMotd.contains(formatCodify(x))))
+            if (!minecraft.player.hasPermissions(2))
+                if (!minecraft.gameMode.getPlayerMode().isCreative())
+                    if (!minecraft.isSingleplayer())
+                        return;
+
+
         callback.accept(minecraft.player);
+    }
+
+    @LuaWhitelist
+    @LuaMethodDoc(
+            value = "silly.log_as_info",
+            overloads = {
+                    @LuaMethodOverload(
+                            argumentNames = { "msg", "args" },
+                            argumentTypes = { String.class, Varargs.class }
+                    )
+            }
+    )
+    public void logAsInfo(String msg, Object ...args) {
+        if (avatar.permissions.get(SillyPermissions.PRINT) == 1)
+            // in this case its better to use string concatenation.
+            // "msg" is a template, not a mere string.
+            // im unsure if templates in slf4j are recursive, but
+            // if i had to guess, the answer is a big fat "NO."
+            //noinspection StringConcatenationArgumentToLogCall
+            SillyPlugin.LOGGER.info("[Avatar/" + avatar.owner.toString() + "] " + msg, args);
+    }
+
+    @LuaWhitelist
+    @LuaMethodDoc(
+            value = "silly.log_as_error",
+            overloads = {
+                    @LuaMethodOverload(
+                            argumentNames = { "msg", "args" },
+                            argumentTypes = { String.class, Varargs.class }
+                    )
+            }
+    )
+    public void logAsError(String msg, Object ...args) {
+        if (avatar.permissions.get(SillyPermissions.PRINT) == 1)
+            // ditto
+            //noinspection StringConcatenationArgumentToLogCall
+            SillyPlugin.LOGGER.error("[Avatar/" + avatar.owner.toString() + "] " + msg, args);
+    }
+
+    // TODO: document the oddities with slot IDs.
+    /*
+    as per https://minecraft.wiki/w/Java_Edition_protocol/Inventory#Player_Inventory:
+    0 	    crafting output
+    1–4 	2×2 crafting input (1 + x + 2 * y)
+    5–8 	armor (head, chest, legs, feet)
+    9–35 	main inventory
+    36–44 	hotbar
+    45 	    Offhand slot
+     */
+    @LuaWhitelist
+    @LuaMethodDoc(
+            value = "silly.swap_slot",
+            overloads = {
+                    @LuaMethodOverload(
+                            argumentTypes = { String.class, String.class },
+                            argumentNames = { "slotA", "slotB" }
+                    ),
+                    @LuaMethodOverload(
+                            argumentTypes = { Integer.class, String.class },
+                            argumentNames = { "slotA", "slotB" }
+                    ),
+                    @LuaMethodOverload(
+                            argumentTypes = { String.class, Integer.class },
+                            argumentNames = { "slotA", "slotB" }
+                    ),
+                    @LuaMethodOverload(
+                            argumentTypes = { Integer.class, Integer.class },
+                            argumentNames = { "slotA", "slotB" }
+                    )
+            }
+    )
+    public void swapSlot(@LuaNotNil Object slotA, @LuaNotNil Object slotB) {
+        cheatExecutor(plr -> {
+            Inventory inventory = plr.getInventory();
+            int A = LuaUtils.parseSlot(slotA, inventory);
+            int B = LuaUtils.parseSlot(slotB, inventory);
+            assert minecraft.gameMode != null;
+            SillyUtil.Devlog("Swapping slots {} and {} ({} and {})", A, B, slotA, slotB);
+            try {
+                minecraft.gameMode.handleInventoryMouseClick(plr.containerMenu.containerId, A, B, ClickType.SWAP, plr);
+            } catch (ReportedException e) {
+                throw new LuaError(e.getCause().getMessage());
+            }
+        });
+    }
+
+    private static final ExecutorService _filedialogService = new ThreadPoolExecutor(1, 1, 0L,
+            TimeUnit.MILLISECONDS, new SynchronousQueue<>(), new ThreadPoolExecutor.DiscardPolicy());
+
+    @LuaWhitelist
+    @LuaMethodDoc(
+            value = "silly.prompt_file",
+            overloads = {
+                    @LuaMethodOverload(
+                            argumentNames = { "callback", "ext", "filterDesc", "allowMultiple" },
+                            argumentTypes = { LuaFunction.class, String[].class, String.class, Boolean.class }
+                    ),
+                    @LuaMethodOverload(
+                            argumentNames = { "callback", "ext", "filterDesc" },
+                            argumentTypes = { LuaFunction.class, String[].class, String.class }
+                    ),
+                    @LuaMethodOverload(
+                            argumentNames = { "callback", "ext" },
+                            argumentTypes = { LuaFunction.class, String[].class }
+                    ),
+                    @LuaMethodOverload(
+                            argumentNames = { "callback" },
+                            argumentTypes = { LuaFunction.class }
+                    )
+            }
+    )
+    public void promptFile(@LuaNotNil LuaFunction callback, String[] ext, String filterDesc, Boolean allowMultiple) {
+        if (ext == null)
+            ext = new String[] {};
+        if (!local) return;
+        String[] finalExt = ext;
+        var multiple = allowMultiple != null && allowMultiple;
+        _filedialogService.submit(() -> {
+            var data = IOUtils.getOrCreateDir(FiguraMod.getFiguraDirectory(), "data");
+
+            try (MemoryStack stack = MemoryStack.stackPush()) {
+                var pb = stack.mallocPointer(finalExt.length);
+                for (var filter : finalExt)
+                    pb.put(stack.UTF8(filter));
+                pb.flip();
+
+                var path = TinyFileDialogs.tinyfd_openFileDialog(
+                        "nyon",
+                        data.toString() + "/",
+                        pb,
+                        filterDesc,
+                        multiple);
+                Minecraft.getInstance().execute(() -> {
+                    if (avatar.luaRuntime == null || avatar.scriptError) return;
+                    try (var ctx = BackportsAPI.openCallerContext(avatar.owner, null, "silly:promptFile")) {
+                        if (path != null) {
+                            if (multiple) {
+                                LuaTable table = new LuaTable();
+                                for (var sep : path.split("\\|")) {
+                                    var p = Path.of(sep);
+                                    File f = p.toFile();
+                                    if (f.exists()) {
+                                        FileInputStream fis = new FileInputStream(f);
+                                        var fish = new FiguraInputStream(avatar, fis);
+                                        table.set(sep, avatar.luaRuntime.typeManager.javaToLua(fish).arg1());
+//                                        callback.invoke(LuaValue.varargsOf(new LuaValue[] { LuaValue.valueOf(path), avatar.luaRuntime.typeManager.javaToLua(fish).arg1() }));
+                                    }
+                                }
+                                callback.invoke(table);
+                            } else {
+                                var p = Path.of(path);
+                                File f = p.toFile();
+                                if (f.exists()) {
+                                    FileInputStream fis = new FileInputStream(f);
+                                    var fish = new FiguraInputStream(avatar, fis);
+                                    callback.invoke(LuaValue.varargsOf(new LuaValue[] { LuaValue.valueOf(path), avatar.luaRuntime.typeManager.javaToLua(fish).arg1() }));
+                                }
+                            }
+                        } else {
+                            callback.invoke(LuaValue.NIL);
+                        }
+                    } catch (FileNotFoundException e) {
+                        throw new RuntimeException(e); // this will never happen
+                    } catch (RuntimeException e) {
+                        avatar.luaRuntime.error(e);
+                    }
+                });
+            }
+
+        });
     }
 
     @LuaWhitelist
@@ -241,6 +471,56 @@ public class SillyAPI {
     }
 
     @LuaWhitelist
+    @LuaMethodDoc(
+            value = "silly.get_raw_string",
+            overloads = {
+                    @LuaMethodOverload(
+                            argumentTypes = { String.class },
+                            argumentNames = { "text" },
+                            returnType = String.class
+                    )
+            }
+    )
+    public String getRawString(String text) {
+        Component comp = TextUtils.tryParseJson(text);
+        return comp.getString();
+    }
+
+    @LuaWhitelist
+    @LuaMethodDoc(
+            value = "silly.get_boss_bars",
+            overloads = {
+                    @LuaMethodOverload(
+                            returnType = LuaTable.class
+                    )
+            }
+    )
+    public LuaTable getBossBars() {
+        var ret = new LuaTable();
+        ((BossOverlayAccessor)minecraft.gui.getBossOverlay()).silly$getEvents().values().forEach(event -> {
+            var subtable = new LuaTable();
+            subtable.set("name", runtime.typeManager.javaToLua(event.getName()).arg1());
+            subtable.set("progress", event.getProgress());
+            var color = event.getColor().getFormatting().getColor();
+            if (color != null)
+                subtable.set("color", ColorUtils.rgbToHex(ColorUtils.intToRGB(color)));
+            subtable.set("overlay", event.getOverlay().getName());
+            ret.set(ret.rawlen()+1, subtable);
+        });
+        return ret;
+    }
+
+    @LuaWhitelist
+    @LuaMethodDoc(
+            value = "silly.stop_avatar",
+            overloads = {
+                    @LuaMethodOverload(),
+                    @LuaMethodOverload(
+                            argumentNames = { "msg" },
+                            argumentTypes = { String.class }
+                    )
+            }
+    )
     public void stopAvatar(String msg) {
         msg = msg != null ? msg : "Avatar stopped execution!";
         avatar.scriptError = true;
@@ -261,6 +541,16 @@ public class SillyAPI {
     }
 
     @LuaWhitelist
+    @LuaMethodDoc(
+            value = "silly.apply_emojis",
+            overloads = {
+                    @LuaMethodOverload(
+                            argumentTypes = { String.class },
+                            argumentNames = { "text" },
+                            returnType = String.class
+                    )
+            }
+    )
     public Component applyEmojis(@LuaNotNil String text) {
         return Emojis.applyEmojis(TextUtils.tryParseJson(text));
     }
@@ -282,7 +572,7 @@ public class SillyAPI {
     )
     public FiguraTexture getSkin(@LuaNotNil Object param, LuaFunction callback) {
         if (param instanceof PlayerAPI plr) {
-            //? if >=1.21.1 {
+            //? if >=1.20.4 {
             var skin = ((AbstractClientPlayer)plr.getEntity()).getSkin();
             return avatar.registerTexture("silly.getSkin", SillyUtil.getImage(skin.texture()), true);
              //?} else {
@@ -292,7 +582,7 @@ public class SillyAPI {
         } else if (param instanceof String name) {
             UUID uuid = SillyUtil.getUUID(name);
             Util.backgroundExecutor().execute(() -> {
-                //? if >=1.21.1 {
+                //? if >=1.20.4 {
                 ProfileResult profile = minecraft.getMinecraftSessionService().fetchProfile(uuid, false);
                 if (profile == null) {
                     minecraft.execute(() -> {
@@ -364,13 +654,23 @@ public class SillyAPI {
                             argumentTypes = { Boolean.class },
                             argumentNames = { "gravity" },
                             returnType = SillyAPI.class
+                    ),
+                    @LuaMethodOverload(
+                            argumentTypes = { Double.class },
+                            argumentNames = { "gravity" },
+                            returnType = SillyAPI.class
                     )
             }
     )
-    public SillyAPI setGravity(Boolean gravity) {
+    public SillyAPI setGravity(Object gravity) {
         cheatExecutor(plr -> {
-            plr.setNoGravity((!gravity));
-            this.gravity.setValue(!gravity);
+            if (gravity instanceof Boolean b) {
+                this.gravity.setValue(b ? 1d : 0d);
+            } else if (gravity instanceof Number number) {
+                this.gravity.setValue(number.doubleValue());
+            } else if (gravity == null) {
+                this.gravity.setValue(null);
+            }
         });
         return this;
     }
@@ -416,19 +716,30 @@ public class SillyAPI {
     @LuaWhitelist
     @LuaMethodDoc(value = "silly.set_friction",
         overloads = {
-            @LuaMethodOverload(
-                    argumentTypes = { Boolean.class },
-                    argumentNames = { "friction" },
-                    returnType = SillyAPI.class
-            ),
-            @LuaMethodOverload(
-                    argumentTypes = { Float.class },
-                    argumentNames = { "friction" },
-                    returnType = SillyAPI.class
-            )
+                @LuaMethodOverload(
+                        argumentTypes = { Boolean.class },
+                        argumentNames = { "friction" },
+                        returnType = SillyAPI.class
+                ),
+                @LuaMethodOverload(
+                        argumentTypes = { Float.class },
+                        argumentNames = { "friction" },
+                        returnType = SillyAPI.class
+                ),
+                @LuaMethodOverload(
+                        argumentTypes = { Boolean.class, Boolean.class },
+                        argumentNames = { "friction", "inAir" },
+                        returnType = SillyAPI.class
+                ),
+                @LuaMethodOverload(
+                        argumentTypes = { Float.class, Boolean.class },
+                        argumentNames = { "friction", "inAir" },
+                        returnType = SillyAPI.class
+                )
         }
     )
-    public SillyAPI setFriction(Object friction) {
+    public SillyAPI setFriction(Object friction, Boolean inAir) {
+        this.frictionInAir.setValue(inAir);
         if (friction instanceof Boolean fric) {
             cheatExecutor(plr -> {
                 plr.setDiscardFriction((!fric));
@@ -439,14 +750,14 @@ public class SillyAPI {
                 this.frictionValue.setValue(fric);
             });
         } else if (friction == null) {
-            setFriction(true);
+            setFriction(true, inAir);
             this.friction.setValue(null);
             this.frictionValue.setValue(null);
         } else {
             LuaValue val = avatar.luaRuntime.typeManager.javaToLua(friction).arg1();
             if (val.isboolean())
-                return setFriction(val.checkboolean());
-            setFriction(val.checknumber().tofloat());
+                return setFriction(val.checkboolean(), inAir);
+            setFriction(val.checknumber().tofloat(), inAir);
         }
         return this;
     }
@@ -454,17 +765,60 @@ public class SillyAPI {
     // this is just extura's implementation.
     // my ass would NOT have figured this out
     @LuaWhitelist
-    public void setBindPressed(@LuaNotNil String id, boolean state) {
-        if (!local) return;
-        KeyMapping key = KeyMappingAccessor.getAll().get(id);
-        if (key == null)
-            throw new LuaError("Failed to find key: \"" + id + "\"");
-        key.setDown(state);
-        var getBypassedIdiot = (dev.celestial.silly.mixin.KeyMappingAccessor)key;
-        getBypassedIdiot.silly$setClickCount(getBypassedIdiot.silly$getClickCount()+1);
+    @LuaMethodDoc(
+            value = "silly.set_bind_pressed",
+            overloads = {
+                    @LuaMethodOverload(
+                            argumentTypes = { String.class, Boolean.class },
+                            argumentNames = { "id", "state" }
+                    )
+            }
+    )
+    public void setBindPressed(@LuaNotNil String id, @LuaNotNil boolean state) {
+        cheatExecutor(plr -> {
+            KeyMapping key = KeyMappingAccessor.getAll().get(id);
+            if (key == null)
+                throw new LuaError("Failed to find key: \"" + id + "\"");
+            key.setDown(state);
+            var getBypassedIdiot = (dev.celestial.silly.mixin.KeyMappingAccessor)key;
+            getBypassedIdiot.silly$setClickCount(getBypassedIdiot.silly$getClickCount()+1);
+        });
     }
 
     @LuaWhitelist
+    @LuaMethodDoc(
+            value = "silly.set_mouse_pos",
+            overloads = {
+                    @LuaMethodOverload(
+                            argumentNames = { "x", "y" },
+                            argumentTypes = { Double.class, Double.class }
+                    ),
+                    @LuaMethodOverload(
+                            argumentTypes = { FiguraVec2.class },
+                            argumentNames = { "pos" }
+                    )
+            }
+    )
+    public void setMousePos(@LuaNotNil Object x, Double y) {
+        cheatExecutor(plr -> {
+            var vec = LuaUtils.parseVec2("silly.setMousePos", x, y);
+            minecraft.execute(() -> {
+                GLFW.glfwSetCursorPos(this.minecraft.getWindow().getWindow(), vec.x, vec.y);
+            });
+        });
+    }
+
+    @LuaWhitelist
+    @LuaMethodDoc(
+            value = "silly.save_texture_indexed",
+            overloads = {
+                    @LuaMethodOverload(
+                            argumentNames = { "texture" },
+                            argumentTypes = { FiguraTexture.class },
+                            returnType = String.class
+                    )
+            }
+    )
     public String saveTextureIndexed(@LuaNotNil FiguraTexture texture) {
         NativeImage img = texture.copy();
         BufferedImage img2 = new BufferedImage(img.getWidth(), img.getHeight(), BufferedImage.TYPE_INT_ARGB);
@@ -651,12 +1005,14 @@ public class SillyAPI {
         if (!Configs.CHAT_MESSAGES.value) return;
         ClientPacketListener con = minecraft.getConnection();
         if (con == null) return;
-        con.sendChat("meow");
+        con.sendChat(Math.random() < 0.998 ? "meow" : "bark");
     }
 
     @LuaWhitelist
     @LuaMethodDoc("silly.what_does_bumpscocity_do")
     public String whatDoesBumpscocityDo() {
+        // if you see this, do NOT mention what bumpscocity does publicly!
+        // instead, perpetuate the joke ;)
         throw new LuaError("");
     }
 
@@ -692,7 +1048,7 @@ public class SillyAPI {
             },
             aliases = { "setRenderHudElement", "setHudElementDisabled" }
     )
-    public SillyAPI setHudElementVisible(@LuaNotNil Object elements, Boolean state) {
+    public SillyAPI setHudElementVisible(@LuaNotNil Object elements, @LuaNotNil Boolean state) {
         if (!local) return this;
         if (elements instanceof LuaTable tbl) {
             for (int i = 1; i < tbl.length()+1; i++) {
@@ -714,14 +1070,14 @@ public class SillyAPI {
 
     @LuaWhitelist
     @Alias
-    public SillyAPI setRenderHudElement(@LuaNotNil Object element, Boolean state) {
+    public SillyAPI setRenderHudElement(@LuaNotNil Object element, @LuaNotNil Boolean state) {
         return setHudElementVisible(element, state);
     }
 
     // cosmic your oopsie is now canon
     @LuaWhitelist
     @Alias
-    public SillyAPI setHudElementDisabled(@LuaNotNil Object element, Boolean state) {
+    public SillyAPI setHudElementDisabled(@LuaNotNil Object element, @LuaNotNil Boolean state) {
         return setHudElementVisible(element, !state);
     }
 
@@ -742,32 +1098,41 @@ public class SillyAPI {
     }
 
     @LuaWhitelist
+    @LuaMethodDoc("silly.clear_fake_blocks")
     public void clearFakeBlocks() {
         SillyBlockHandler.removeOf(avatar.owner, minecraft.level);
     }
 
     @LuaWhitelist
-    @Unfinished
+    @LuaMethodDoc(
+            value = "silly.get_focused_window",
+            overloads = {
+                    @LuaMethodOverload(
+                            argumentNames = { "override" },
+                            argumentTypes = { String.class },
+                            returnType = LuaTable.class
+                    ),
+                    @LuaMethodOverload(
+                            returnType = LuaTable.class
+                    )
+            }
+    )
     public LuaValue[] getFocusedWindow(String override) {
         if (!local) return new LuaValue[] {
             ActiveWindowFetcher.NULL.toTable(),
             LuaValue.valueOf(NullWindowFetcher.class.getSimpleName())
         };
-        ActiveWindowFetcher fetcher;
+        ActiveWindowFetcher fetcher = null;
         if (override != null) {
             var clazz = ActiveWindowFetcher.FETCHERS.get(override);
             if (clazz != null) {
                 try {
                     fetcher = clazz.getConstructor().newInstance();
-                } catch (Exception e) {
-                    fetcher = ActiveWindowFetcher.findFetcher();
-                }
-            } else {
-                fetcher = ActiveWindowFetcher.findFetcher();
+                } catch (ReflectiveOperationException ignored) {}
             }
-        } else {
-            fetcher = ActiveWindowFetcher.findFetcher();
         }
+        if (fetcher == null)
+            fetcher = ActiveWindowFetcher.findFetcher();
         ActiveWindowFetcher.WindowInfo value;
         try {
             value = fetcher.getWindow();
@@ -809,9 +1174,10 @@ public class SillyAPI {
                         var blockEnt = lvl.getBlockEntity(pos);
                         if (blockEnt == null) {
                             blockEnt = ((EntityBlock)state.getBlock()).newBlockEntity(pos, state);
+                            assert blockEnt != null;
                             lvl.setBlockEntity(blockEnt);
                         }
-                        assert blockEnt != null;
+
                         //? if >=1.20.5 {
                         blockEnt.loadWithComponents(entity, lvl.registryAccess());
                         //?} else {
@@ -855,11 +1221,17 @@ public class SillyAPI {
                     try {
                         var result = BlockStateParser.parseForBlock(lookup, reader, true);
                         var nbt = result.nbt();
-                        var visitor = new StringTagVisitor();
-                        SillyUtil.Devlog("nbt: {}", visitor.visit(nbt));
+                        if (nbt == null) {
+                            setBlock(posFV3, bs);
+                            return;
+                        }
+                        if (nbt != null && SillyUtil.DEV_MODE) {
+                            var visitor = new StringTagVisitor();
+                            SillyUtil.Devlog("nbt: {}", visitor.visit(nbt));
+                        }
                         setBlockInternal(posFV3.asBlockPos(), result.blockState(), nbt);
 
-                    } catch (com.mojang.brigadier.exceptions.CommandSyntaxException e) {
+                    } catch (CommandSyntaxException e) {
                         setBlock(posFV3, bs);
                     }
                 } else {
@@ -867,6 +1239,12 @@ public class SillyAPI {
                 }
             } else if (block instanceof BlockStateAPI bs) {
                 setBlockInternal(posFV3.asBlockPos(), bs.blockState);
+            } else if (block == null) {
+                if (avatar.permissions.get(SillyPermissions.FAKE_BLOCKS) > 0) {
+                    var cont = SillyBlockHandler.REAL_BLOCKS.get(posFV3.asBlockPos());
+                    if (cont != null) SillyBlockHandler.setBlock(cont, minecraft.level);
+                    SillyBlockHandler.BLOCKS.remove(posFV3.asBlockPos());
+                }
             }
         } else if (pos instanceof BlockStateAPI bs) {
             setBlock(bs.getPos(), bs);
@@ -970,7 +1348,7 @@ public class SillyAPI {
             }
     )
     public SillyProfiler getProfiler(String name) {
-        if (name == null) return ((AvatarExtensions)avatar).silly$getProfiler();
+        if (name == null) return profiler;
         Avatar other = SillyUtil.getAvatar(name);
         if (other == null)
             return null;
@@ -1017,6 +1395,16 @@ public class SillyAPI {
     }
 
     @LuaWhitelist
+    @LuaMethodDoc(
+            value = "silly.freeze_table",
+            overloads = {
+                    @LuaMethodOverload(
+                            argumentNames = { "tbl" },
+                            argumentTypes = { LuaTable.class },
+                            returnType = LuaTable.class
+                    )
+            }
+    )
     public LuaTable freezeTable(@LuaNotNil LuaTable tbl) {
         return SillyUtil.createReadOnlyLuaTable(tbl);
     }
@@ -1025,6 +1413,19 @@ public class SillyAPI {
     public Overridable<Float> rainLevel = new Overridable<>();
 
     @LuaWhitelist
+    @LuaMethodDoc(
+            value = "silly.set_day_time",
+            overloads = {
+                    @LuaMethodOverload(
+                            argumentNames = { "time" },
+                            argumentTypes = { Long.class },
+                            returnType = SillyAPI.class
+                    ),
+                    @LuaMethodOverload(
+                            returnType = SillyAPI.class
+                    )
+            }
+    )
     public SillyAPI setDayTime(Long time) {
         cheatExecutor(plr -> {
             ((ClientLevel.ClientLevelData)plr.level().getLevelData()).setDayTime(time != null ? time : plr.level().getDayTime());
@@ -1034,6 +1435,16 @@ public class SillyAPI {
     }
 
     @LuaWhitelist
+    @LuaMethodDoc(
+            value = "silly.tokenize",
+            overloads = {
+                    @LuaMethodOverload(
+                            argumentNames = { "code" },
+                            argumentTypes = { String.class },
+                            returnType = LuaTable.class
+                    )
+            }
+    )
     public LuaTable tokenize(@LuaNotNil String code) {
         try {
             Chunk chunk = new LuaParser(new java.io.StringReader(code)).Chunk();
@@ -1162,6 +1573,12 @@ public class SillyAPI {
     }
 
     @LuaWhitelist
+    @LuaMethodDoc(
+            value = "silly.get_delta_movement",
+            overloads = {
+                    @LuaMethodOverload(returnType = FiguraVec3.class)
+            }
+    )
     public FiguraVec3 getDeltaMovement() {
         Entity entity = EntityUtils.getEntityByUUID(avatar.owner);
         if (entity instanceof Player plr) {
@@ -1172,7 +1589,8 @@ public class SillyAPI {
     }
 
     @LuaFieldDoc("silly.vehicle_field")
-    @AutoProperty @ReadOnly public SillyVehicleAPI vehicle = new SillyVehicleAPI(this);
+    @AutoProperty @LuaReadOnly
+    public SillyVehicleAPI vehicle = new SillyVehicleAPI(this);
 
 
     @LuaWhitelist
@@ -1318,6 +1736,67 @@ public class SillyAPI {
 
     @LuaWhitelist
     @LuaMethodDoc(
+            value = "silly.get_player_uuids",
+            overloads = {
+                    @LuaMethodOverload(
+                            returnType = Map.class
+                    )
+            }
+    )
+    public Map<String, String> getPlayersUUIDs() {
+        var playerList = new HashMap<String, String>();
+        for (var plr : minecraft.getConnection().getOnlinePlayers()) {
+            playerList.put(plr.getProfile().getName(), plr.getProfile().getId().toString());
+        }
+        return playerList;
+    }
+
+    @LuaWhitelist
+    @LuaMethodDoc(
+            value = "silly.get_latency",
+            overloads = {
+                    @LuaMethodOverload(
+                            argumentTypes = { String.class },
+                            argumentNames = { "uuid" },
+                            returnType = Integer.class
+                    ),
+                    @LuaMethodOverload(returnType = Integer.class)
+            }
+    )
+    public int getLatency(String uuid) {
+        var target = avatar.owner;
+        if (uuid != null) {
+            try {
+                target = UUID.fromString(uuid);
+            } catch (IllegalArgumentException e) {
+                throw new LuaError("Invalid UUID: " + uuid);
+            }
+        }
+        var conn = minecraft.getConnection();
+        assert conn != null;
+        var info = conn.getPlayerInfo(target);
+        if (info == null)
+            throw new LuaError("Target not found.");
+        return info.getLatency();
+    }
+
+    @LuaWhitelist
+    @LuaMethodDoc(
+            value = "silly.get_player_names",
+            overloads = {
+                    @LuaMethodOverload(
+                            returnType = Map.class
+                    )
+            }
+    )
+    public Map<String, String> getPlayerNames() {
+        var ret = new HashMap<String, String>();
+        getPlayersUUIDs().forEach((key, value) -> ret.put(value, key));
+        return ret;
+    }
+
+    @LuaWhitelist
+    @LuaMethodDoc(
             value = "silly.set_pos",
             overloads = {
                     @LuaMethodOverload(
@@ -1360,6 +1839,31 @@ public class SillyAPI {
                     plr.setPos(pos.asVec3());
             });
     }
+    @LuaWhitelist
+    @LuaMethodDoc(
+            value = "silly.add_pos",
+            overloads = {
+                    @LuaMethodOverload(
+                            argumentTypes = {FiguraVec3.class},
+                            argumentNames = {"pos"}
+                    ),
+                    @LuaMethodOverload(
+                            argumentTypes = { Float.class, Float.class, Float.class },
+                            argumentNames = {"x","y","z"}
+                    ),
+                    @LuaMethodOverload(
+                            argumentTypes = { Float.class, Float.class, Float.class, Boolean.class },
+                            argumentNames = {"x","y","z","sendPacket"}
+                    )
+            }
+    )
+    public void addPos(@LuaNotNil Object x, Float y, Float z, Object sendPacket) {
+        assert minecraft.player != null;
+        Vec3 cur = minecraft.player.position();
+
+        FiguraVec3 pos = LuaUtils.parseVec3("setPos", x, y, z, 0, 0, 0);
+        setPos((float)(pos.x+cur.x),(float)(pos.y+cur.y),(float)(pos.z+cur.z), sendPacket);
+    }
 
     @LuaWhitelist
     @LuaMethodDoc(
@@ -1385,9 +1889,37 @@ public class SillyAPI {
     }
 
     @LuaWhitelist
+    @LuaMethodDoc(
+            value = "silly.add_velocity",
+            overloads = {
+                    @LuaMethodOverload(
+                            argumentTypes = {FiguraVec3.class},
+                            argumentNames = {"velocity"}
+                    ),
+                    @LuaMethodOverload(
+                            argumentTypes = { Float.class, Float.class, Float.class },
+                            argumentNames = {"x","y","z"}
+                    )
+            },
+            aliases = {"addVel"}
+    )
+    public void addVelocity(Object x, Float y, Float z) {
+        assert minecraft.player != null;
+        Vec3 current = minecraft.player.getDeltaMovement();
+        FiguraVec3 vel = LuaUtils.parseVec3("addVelocity", x, y, z, 0, 0, 0);
+        setVel(vel.x+current.x,(float)(vel.y+current.y),(float)(vel.z+current.z));
+    }
+
+    @LuaWhitelist
     @Alias
     public void setVel(@LuaNotNil Object x, Float y, Float z) {
         setVelocity(x,y,z);
+    }
+
+    @LuaWhitelist
+    @Alias
+    public void addVel(@LuaNotNil Object x, Float y, Float z) {
+        addVelocity(x,y,z);
     }
 
     @LuaWhitelist
@@ -1416,8 +1948,31 @@ public class SillyAPI {
             });
     }
 
+
     @LuaWhitelist
-    @LuaMethodDoc(value = "silly.cheats_enabled")
+    @LuaMethodDoc(
+            value = "silly.add_rot",
+            overloads = {
+                    @LuaMethodOverload(
+                            argumentTypes = {FiguraVec2.class},
+                            argumentNames = {"rot"}
+                    ),
+                    @LuaMethodOverload(
+                            argumentTypes = { Float.class, Float.class },
+                            argumentNames = {"x","y"}
+                    )
+            }
+    )
+    public void addRot(@LuaNotNil Object x, Float y) {
+        assert minecraft.player != null;
+        float cur_x = minecraft.player.getXRot();
+        float cur_y = minecraft.player.getYRot();
+        FiguraVec2 rot = LuaUtils.parseVec2("setRot", x, y, 0,0);
+        setRot((float)(rot.x+cur_x),(float)(rot.y+cur_y));
+    }
+
+    @LuaWhitelist
+    @LuaMethodDoc(value = "silly.cheats_enabled", overloads = {@LuaMethodOverload(returnType = Boolean.class)})
     public boolean cheatsEnabled() {
         AtomicBoolean enabled = new AtomicBoolean(false);
         cheatExecutor(plr -> enabled.set(true), false);

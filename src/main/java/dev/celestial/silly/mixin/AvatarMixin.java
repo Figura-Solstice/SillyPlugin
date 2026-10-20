@@ -4,16 +4,23 @@ import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.mojang.blaze3d.vertex.PoseStack;
+import dev.celestial.silly.SillySettings;
+import dev.celestial.silly.SillyUtil;
 import dev.celestial.silly.helper.AutoProfile;
 import dev.celestial.silly.lua.BackportsAPI;
 import dev.celestial.silly.lua.SillyAPI;
 import dev.celestial.silly.lua.SillyProfiler;
+import dev.celestial.silly.luaj.LuaOOM;
+import dev.celestial.silly.luaj.memory.AllocationTracker;
 import dev.celestial.silly.not_a_mixin.AvatarExtensions;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
 import org.figuramc.figura.avatar.Avatar;
 import org.figuramc.figura.lua.FiguraLuaRuntime;
+import org.figuramc.figura.model.rendering.AvatarRenderer;
+import org.figuramc.figura.model.rendering.ImmediateAvatarRenderer;
 import org.figuramc.figura.model.rendering.PartFilterScheme;
 import org.jetbrains.annotations.Nullable;
 import org.luaj.vm2.Varargs;
@@ -21,11 +28,14 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Coerce;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 @Mixin(value = Avatar.class, remap = false)
 public class AvatarMixin implements AvatarExtensions {
@@ -36,6 +46,19 @@ public class AvatarMixin implements AvatarExtensions {
 
     @Unique
     public SillyProfiler profiler;
+
+    @Unique
+    public AllocationTracker<LuaOOM> allocationTracker;
+
+    @Override
+    public AllocationTracker<LuaOOM> silly$getAllocationTracker() {
+        return allocationTracker;
+    }
+
+    @Inject(method = "<init>(Ljava/util/UUID;Lnet/minecraft/world/entity/EntityType;Ljava/lang/String;)V", at = @At("TAIL"))
+    public void silly$allocateTracker(UUID owner, EntityType type, String name, CallbackInfo ci) {
+        allocationTracker = SillyUtil.allocate.apply((Avatar)(Object)this);
+    }
 
     @Unique
     public Map<Class<?>, Object> silly$userdata = new HashMap<>();

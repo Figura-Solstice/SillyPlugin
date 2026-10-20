@@ -71,7 +71,6 @@ public class ClientPacketListenerMixin {
             });
             if (!AvatarManager.panic && !(SillyPlugin.hostInstance != null && SillyPlugin.hostInstance.fakeBlocksDisabled)) {
                 ci.cancel();
-                return;
             }
         }
     }

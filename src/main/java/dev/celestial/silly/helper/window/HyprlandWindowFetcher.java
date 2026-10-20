@@ -6,6 +6,7 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.stream.Collectors;
 
+// TODO: use IPC directly instead
 public class HyprlandWindowFetcher extends JsonWindowFetcher {
     @Override
     public @Nullable String getJsonString() {

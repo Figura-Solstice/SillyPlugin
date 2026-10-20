@@ -5,7 +5,7 @@ import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.lib.apache.commons.tuple.Pair;
 import dev.celestial.silly.annotations.AutoProperty;
 import dev.celestial.silly.annotations.AutoPropertyWhitelist;
-import dev.celestial.silly.annotations.ReadOnly;
+import dev.celestial.silly.annotations.LuaReadOnly;
 import dev.celestial.silly.lua.BackportsAPI;
 import dev.celestial.silly.not_a_mixin.AvatarExtensions;
 import org.figuramc.figura.avatar.AvatarManager;
@@ -61,7 +61,7 @@ public abstract class LuaTypeManagerMixin {
                     }
                 }
             });
-            if (!field.isAnnotationPresent(ReadOnly.class))
+            if (!field.isAnnotationPresent(LuaReadOnly.class))
                 setters.set(field.getName(), new TwoArgFunction() {
                     @Override
                     public LuaValue call(LuaValue arg1, LuaValue arg2) {

@@ -20,11 +20,19 @@ public class SillySettings {
     public static SillySetting SILLY_ON_HOST = new SillyBooleanSetting("silly_on_host", true);
     public static SillySetting SILLY_ON_NONHOST = new SillyBooleanSetting("silly_on_nonhost", true);
     public static SillySetting CHEATS = new SillyBooleanSetting("cheats", true);
+    public static SillySetting MEMORY_TRACK = new SillyBooleanSetting("memtrack", false);
+    public static SillySetting MEMORY_GC = new SillyBooleanSetting("memgc", true);
+
+    public static ConfigType.Category DEV_CATEGORY;
     public static SillySetting DEV_LOGS;
+    public static SillySetting LUAGRAPHICS_DEBUG;
 
     static {
-        if (SillyUtil.DEV_MODE)
-            DEV_LOGS = new SillyBooleanSetting("dev_logs", true);
+        if (SillyUtil.DEV_MODE) {
+            DEV_CATEGORY = category("sillyplugin_dev");
+            DEV_LOGS = new SillyBooleanSetting("dev_logs", true, DEV_CATEGORY);
+            LUAGRAPHICS_DEBUG = new SillyBooleanSetting("luagraphics_debug", true, DEV_CATEGORY);
+        }
     }
 
     public static ConfigType.Category TWEAKS_CATEGORY = category("sillyplugin_tweaks");

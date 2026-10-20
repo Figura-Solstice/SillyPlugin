@@ -26,6 +26,8 @@ plugins {
     id("dev.kikugie.stonecutter") version "0.6+"
 }
 
+
+
 stonecutter {
     kotlinController = true
     centralScript = "build.gradle.kts"
@@ -41,11 +43,12 @@ stonecutter {
         // Configure your targets here!
         mc("1.21.4", loaders = listOf("fabric", "neoforge"))
         mc("1.21.1", loaders = listOf("fabric", "neoforge"))
+        mc("1.20.4", loaders = listOf("fabric")) // neoforge was too painful
         mc("1.20.1", loaders = listOf("fabric"))
 
         // This is the default target.
         // https://stonecutter.kikugie.dev/stonecutter/guide/setup#settings-settings-gradle-kts
-        vcsVersion = "1.20.1-fabric"
+        vcsVersion = "1.21.4-fabric"
     }
 }
 

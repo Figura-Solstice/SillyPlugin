@@ -4,10 +4,11 @@ import com.llamalad7.mixinextras.lib.apache.commons.tuple.Pair;
 import dev.celestial.silly.SillyUtil;
 import dev.celestial.silly.annotations.AutoProperty;
 import dev.celestial.silly.annotations.AutoPropertyWhitelist;
-import dev.celestial.silly.annotations.ReadOnly;
+import dev.celestial.silly.annotations.LuaReadOnly;
 import dev.celestial.silly.helper.CallerContext;
 import dev.celestial.silly.SillyPlugin;
 import dev.celestial.silly.helper.CyclicalDeque;
+import dev.celestial.silly.lua.BackportWrapper.BackportedTexture;
 import dev.celestial.silly.mixin.RuntimeAccessor;
 import net.minecraft.nbt.ByteArrayTag;
 import org.figuramc.figura.avatar.Avatar;
@@ -20,6 +21,7 @@ import org.figuramc.figura.lua.docs.LuaFieldDoc;
 import org.figuramc.figura.lua.docs.LuaMethodDoc;
 import org.figuramc.figura.lua.docs.LuaMethodOverload;
 import org.figuramc.figura.lua.docs.LuaTypeDoc;
+import org.figuramc.figura.model.rendering.texture.FiguraTexture;
 import org.figuramc.figura.utils.FiguraText;
 import org.figuramc.figura.utils.PathUtils;
 import org.jetbrains.annotations.Nullable;
@@ -46,8 +48,25 @@ public class BackportsAPI {
         return CallerContext.Open(uuid, owner, context);
     }
 
+    @LuaWhitelist
     @LuaFieldDoc("silly_backports.pre_render")
-    @AutoProperty @ReadOnly public LuaEvent PRE_RENDER = new LuaEvent();
+    @AutoProperty @LuaReadOnly
+    public LuaEvent PRE_RENDER = new LuaEvent();
+
+    @LuaWhitelist
+    @LuaMethodDoc(
+            value = "silly_backports.wrap_texture",
+            overloads = {
+                    @LuaMethodOverload(
+                            argumentNames = { "tex" },
+                            argumentTypes = { FiguraTexture.class },
+                            returnType = FiguraTexture.class
+                    )
+            }
+    )
+    public BackportedTexture wrapTexture(@LuaNotNil FiguraTexture tex) {
+        return new BackportedTexture(tex);
+    }
 
     public static void pushStack(UUID uuid, String context) {
         if (SillyUtil.DEV_MODE)

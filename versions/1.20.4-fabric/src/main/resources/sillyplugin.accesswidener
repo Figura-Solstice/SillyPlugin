@@ -1,0 +1,3 @@
+accessWidener v2 named
+accessible class net/minecraft/client/renderer/texture/SimpleTexture$TextureImage
+accessible method net/minecraft/client/renderer/texture/SimpleTexture getTextureImage (Lnet/minecraft/server/packs/resources/ResourceManager;)Lnet/minecraft/client/renderer/texture/SimpleTexture$TextureImage;

@@ -40,7 +40,13 @@ public class SillyVoicechatPlugin implements VoicechatPlugin {
             AUDIO.put(voiceData.owner, voiceData);
         });
         registration.registerEvent(ClientReceiveSoundEvent.EntitySound.class, (ev) -> {
+            //? if 1.20.4 {
+            /*// pray the audio channel ID matches.
+            var voiceData = new SillyVoiceData(ev.getId(), ev.getRawAudio(), System.currentTimeMillis());
+            *///?} else {
             var voiceData = new SillyVoiceData(ev.getEntityId(), ev.getRawAudio(), System.currentTimeMillis());
+            //?}
+
             AUDIO.put(voiceData.owner, voiceData);
         });
     }

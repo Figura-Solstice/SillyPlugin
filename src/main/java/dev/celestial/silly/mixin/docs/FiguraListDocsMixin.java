@@ -15,6 +15,7 @@ import java.lang.reflect.Field;
 import java.util.*;
 import java.util.function.Supplier;
 
+@SuppressWarnings("removal")
 @Mixin(targets = {"org.figuramc.figura.lua.docs.FiguraListDocs$ListDoc"}, remap = false)
 @Unique
 public class FiguraListDocsMixin {
@@ -33,47 +34,32 @@ public class FiguraListDocsMixin {
         }
 
     }
-    // doesnt work; mixin says it cant find $VALUES
-//    @Shadow
-//    @Final
-//    @Mutable
-//    private static Object $VALUES;
-
     @Unique
     private static List<Object> silly$fakeValues = new ArrayList<>();
     @Unique
-    private static HashMap<String, Object> silly$quickFakeValuesLookup = new HashMap<>();
-    @Unique
     private static Class<?> silly$class = null;
 
-    // kill me please this is hell
+    // okay its less hell now but its still ass
     @Unique
     private static void silly$addToDocs(String $NAME, Supplier<Object> supplier, String name, String id, int split) throws Throwable {
         if (silly$class == null) {
             for (Class<?> maybe : FiguraListDocs.class.getDeclaredClasses()) {
                 if (maybe.getSimpleName().equals("ListDoc")) {
                     silly$class = maybe;
+                    break;
                 }
             }
         }
         if (silly$class == null) throw new AssertionError("Could not find ListDoc enum class!");
 
         Field f = silly$class.getDeclaredField("$VALUES");
-        SillyUtil.Devlog("Get got");
         f.setAccessible(true);
-        SillyUtil.Devlog("Accessible");
 
         Object base = silly$unsafe.staticFieldBase(f);
-        SillyUtil.Devlog("Base {}", base);
         long offset = silly$unsafe.staticFieldOffset(f);
-        SillyUtil.Devlog("Offset {}", offset);
 
         f.setAccessible(true);
-        // errors HERE lmao VVVV
-        // Caused by: java.lang.IllegalArgumentException: Can not get static final [Lorg.figuramc.figura.lua.docs.FiguraListDocs$ListDoc; field org.figuramc.figura.lua.docs.FiguraListDocs$ListDoc.$VALUES
-        // curiously, only happens on the second pass
         Object values = f.get(null); // Object -> ListDoc[]
-        SillyUtil.Devlog("Values");
 
         Object[] values2 = (Object[])values; // Object[] -> ListDoc[]
         ArrayList<Object> list = new ArrayList<>(Arrays.stream(values2).toList());
@@ -93,26 +79,7 @@ public class FiguraListDocsMixin {
         }
 
         silly$unsafe.putObject(base, offset, arr);
-//        silly$fakeValues.add(instance);
-//        silly$quickFakeValuesLookup.put($NAME.toLowerCase(), instance);
     }
-
-//    @Inject(method = "values", at = @At("RETURN"), cancellable = true)
-//    private static void silly$ihatethis(CallbackInfoReturnable<Object[]> cir) {
-//        ArrayList<Object> list = new ArrayList<>(Arrays.asList(cir.getReturnValue()));
-//        for (var value : silly$fakeValues) {
-//            list.add(silly$class.cast(value));
-//        }
-//        Object[] ret = (Object[])Array.newInstance(silly$class, list.size());
-//        System.arraycopy(list.toArray(), 0, ret, 0, list.size());
-//        cir.setReturnValue(ret);
-//    }
-//
-//    @Inject(method = "valueOf", at = @At("HEAD"), cancellable = true)
-//    private static void silly$ihatethis2(String name, CallbackInfoReturnable<Object> cir) {
-//        if (silly$quickFakeValuesLookup.containsKey(name.toLowerCase(Locale.ROOT)))
-//            cir.setReturnValue(silly$quickFakeValuesLookup.get(name.toLowerCase(Locale.ROOT)));
-//    }
 
     static {
         try {

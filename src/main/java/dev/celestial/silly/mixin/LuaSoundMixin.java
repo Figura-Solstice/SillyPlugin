@@ -31,10 +31,6 @@ public class LuaSoundMixin {
     @Final
     private SoundBuffer buffer;
 
-    @Shadow
-    @Final
-    private Sound sound;
-
     @Unique
     private boolean silly$shouldCancelStereoSound() {
         if (owner.permissions.get(SillyPermissions.STEREO_SOUNDS) == 0) {
@@ -42,7 +38,7 @@ public class LuaSoundMixin {
             return true;
         } else {
             owner.noPermissions.remove(SillyPermissions.STEREO_SOUNDS);
-            if (SillySettings.TOAST_ON_STEREO.getBool())
+            if (SillySettings.TOAST_ON_STEREO.getBool() && !owner.isHost)
                 FiguraToast.sendToast("Stereo sound", "By " + owner.entityName);
         }
         return false;

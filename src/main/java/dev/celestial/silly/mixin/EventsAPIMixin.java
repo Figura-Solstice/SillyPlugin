@@ -27,6 +27,16 @@ public class EventsAPIMixin implements EventsAccessor {
     @LuaFieldDoc("events.gui_render")
     public LuaEvent GUI_RENDER = new LuaEvent();
 
+    @Unique
+    @LuaWhitelist
+    @LuaFieldDoc("events.ping_failed")
+    public LuaEvent PING_FAILED = new LuaEvent();
+
+    @Unique
+    @LuaWhitelist
+    @LuaFieldDoc("events.silly_sound_event")
+    public LuaEvent SILLY_SOUND_EVENT = new LuaEvent();
+
 //    @Unique
 //    @LuaWhitelist
 //    @LuaFieldDoc("events.move")
@@ -40,6 +50,8 @@ public class EventsAPIMixin implements EventsAccessor {
     private void initMixin(CallbackInfo ci) {
         events.put("ERROR", ERROR);
         events.put("GUI_RENDER", GUI_RENDER);
+        events.put("PING_FAILED", PING_FAILED);
+        events.put("SILLY_SOUND_EVENT", SILLY_SOUND_EVENT);
     }
 
     @Override

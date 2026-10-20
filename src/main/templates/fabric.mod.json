@@ -11,13 +11,19 @@
     ],
     "contributors": [
         {
-            "name": "TheKillerBunny: Making goofyplugin"
+            "name": "BeanGalSolina: for making GoofyPlugin"
         },
         {
             "name": "Sam ★: Being so cool fr"
         },
         {
-            "name": "cosmic_the_cat: Creating the icon for the plugin, and making VSDocs"
+            "name": "cosmic_the_cat: Creating the icon for the plugin"
+        },
+        {
+            "name": "Somataru: French translations"
+        },
+        {
+            "name": "KingRoboLizard: getBlockEntity"
         }
     ],
     "entrypoints": {
@@ -31,6 +37,10 @@
     "mixins": [
         {
             "config": "sillyplugin.mixins.json",
+            "environment": "*"
+        },
+        {
+            "config": "sillyplugin-backports.mixins.json",
             "environment": "*"
         }
     ],

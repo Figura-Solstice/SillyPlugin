@@ -3,12 +3,15 @@ package dev.celestial.silly.lua;
 import com.llamalad7.mixinextras.lib.apache.commons.tuple.Pair;
 import dev.celestial.silly.SillyUtil;
 import dev.celestial.silly.helper.CyclicalDeque;
+import dev.celestial.silly.not_a_mixin.AvatarExtensions;
+import org.figuramc.figura.avatar.Avatar;
 import org.figuramc.figura.lua.LuaWhitelist;
 import org.figuramc.figura.lua.docs.LuaMethodDoc;
 import org.figuramc.figura.lua.docs.LuaMethodOverload;
 import org.figuramc.figura.lua.docs.LuaTypeDoc;
 import org.luaj.vm2.LuaTable;
 import org.luaj.vm2.LuaValue;
+import org.spongepowered.asm.mixin.injection.Inject;
 
 import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
@@ -16,11 +19,16 @@ import java.util.concurrent.ConcurrentHashMap;
 @LuaWhitelist
 @LuaTypeDoc(name = "SillyProfiler", value = "silly_profiler")
 public class SillyProfiler {
+    private final Avatar owner;
     public CyclicalDeque<Pair<Long, Long>> lastTickEventTimes = new CyclicalDeque<>(60);
     public CyclicalDeque<Pair<Long, Long>> lastRenderEventTimes = new CyclicalDeque<>(60);
     public CyclicalDeque<Pair<Long, Long>> lastRenderTimes = new CyclicalDeque<>(60);
     public CyclicalDeque<Pair<Long, Long>> lastWorldTickTimes = new CyclicalDeque<>(60);
     public CyclicalDeque<Pair<Long, Long>> lastWorldRenderTimes = new CyclicalDeque<>(60);
+
+    public SillyProfiler(Avatar owner) {
+        this.owner = owner;
+    }
 
     private LuaTable getData(CyclicalDeque<Pair<Long, Long>> longJohns) {
         LuaTable ret = new LuaTable();
@@ -42,6 +50,15 @@ public class SillyProfiler {
         if (deque.isEmpty())
             return -1;
         return getTime(deque.getFirst());
+    }
+
+    @LuaWhitelist
+    @LuaMethodDoc(
+            value = "silly_profiler.get_memory_usage",
+            overloads = {@LuaMethodOverload(returnType = Long.class)}
+    )
+    public long getMemoryUsage() {
+        return ((AvatarExtensions)owner).silly$getAllocationTracker().getTotal();
     }
 
     // { [string]: long[60] (nanos) }

@@ -6,17 +6,20 @@ import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.lib.apache.commons.tuple.Pair;
 import dev.celestial.silly.SillyPermissions;
 import dev.celestial.silly.SillyPlugin;
+import dev.celestial.silly.SillyUtil;
 import dev.celestial.silly.helper.AutoProfile;
 import dev.celestial.silly.lua.BackportsAPI;
 import dev.celestial.silly.helper.CallerContext;
 import dev.celestial.silly.lua.SillyAPI;
 import dev.celestial.silly.lua.SillyProfiler;
+import dev.celestial.silly.luaj.LuaUncatchableError;
 import dev.celestial.silly.not_a_mixin.AvatarExtensions;
 import dev.celestial.silly.not_a_mixin.EventsAccessor;
 import org.figuramc.figura.avatar.Avatar;
 import org.figuramc.figura.lua.FiguraLuaRuntime;
 import org.figuramc.figura.lua.api.event.LuaEvent;
 import org.luaj.vm2.*;
+import org.luaj.vm2.lib.BaseLib;
 import org.luaj.vm2.lib.VarArgFunction;
 import org.luaj.vm2.lib.ZeroArgFunction;
 import org.spongepowered.asm.mixin.Final;
@@ -58,13 +61,17 @@ public abstract class FiguraLuaRuntimeMixin {
     }
 
     @Unique
-    private Function<Pair<LuaFunction, Pair<LuaNumber, LuaNumber>>, ZeroArgFunction> silly$executiousInterruptus = (hook) -> new ZeroArgFunction() {
+    private Function<Pair<Pair<LuaFunction, Pair<LuaNumber, LuaNumber>>, FiguraLuaRuntime>, ZeroArgFunction> silly$executiousInterruptus = (pack) -> new ZeroArgFunction() {
+        private Pair<LuaFunction, Pair<LuaNumber, LuaNumber>> hook = pack.getLeft();
+        private FiguraLuaRuntime owner = pack.getRight();
         private Integer callsRemaining = hook.getRight().getLeft().toint();
         private Integer callSteps = hook.getRight().getRight().toint();
         @Override
             public LuaValue call() {
-                if (endTime.get() != null && endTime.get().isBefore(Instant.now()))
+                if (endTime.get() != null && endTime.get().isBefore(Instant.now())) {
+                    owner.error(new LuaUncatchableError("Execution timed out!"));
                     error("Execution timed out!");
+                }
                 callsRemaining -= callSteps;
                 if (callsRemaining <= 0) hook.getLeft().call();
                 return null;
@@ -83,7 +90,7 @@ public abstract class FiguraLuaRuntimeMixin {
             else
                 count = LuaValue.valueOf(Integer.MAX_VALUE);
             var sethook = ((RuntimeAccessor)this).getSetHookFunction();
-            sethook.call(silly$executiousInterruptus.apply(Pair.of(hookFunc, Pair.of(count, LuaValue.valueOf(Integer.min(count.checkint(), 10000))))), mask, LuaValue.valueOf(Integer.min(count.checkint(), 10000)));
+            sethook.call(silly$executiousInterruptus.apply(Pair.of(Pair.of(hookFunc, Pair.of(count, LuaValue.valueOf(Integer.min(count.checkint(), 10000)))), (FiguraLuaRuntime) (Object)this)), mask, LuaValue.valueOf(Integer.min(count.checkint(), 10000)));
         }
     }
 
@@ -105,13 +112,28 @@ public abstract class FiguraLuaRuntimeMixin {
                 if (Objects.equals(toRun, "RENDER")) {
                     SillyProfiler prf = ((AvatarExtensions)owner).silly$getProfiler();
                         if (prf == null) {
-                            return original.call(toRun, limit, args);
+                            try {
+                                SillyUtil.nikoTricksTheJavaCompiler();
+                                return original.call(toRun, limit, args);
+                            } catch (LuaUncatchableError e) {
+                                error(e);
+                            }
                         }
                         try (AutoProfile profiler = AutoProfile.start(prf.lastRenderEventTimes::push)) {
-                            return original.call(toRun, limit, args);
+                            try {
+                                SillyUtil.nikoTricksTheJavaCompiler();
+                                return original.call(toRun, limit, args);
+                            } catch (LuaUncatchableError e) {
+                                error(e);
+                            }
                         }
                 } else {
-                    return original.call(toRun, limit, args);
+                    try {
+                        SillyUtil.nikoTricksTheJavaCompiler();
+                        return original.call(toRun, limit, args);
+                    } catch (LuaUncatchableError e) {
+                        error(e);
+                    }
                 }
             } finally {
                 if (removeEndTime)
@@ -167,16 +189,27 @@ public abstract class FiguraLuaRuntimeMixin {
                 endTime.set(Instant.now().plusMillis(this.owner.permissions.get(SillyPermissions.EXEC_TIME)));
             else
                 removeEndTime = false;
+            SillyUtil.nikoTricksTheJavaCompiler();
             return original.call(str);
+        } catch (LuaUncatchableError e) {
+            error(e);
+            return null;
         } finally {
             if (removeEndTime)
                 endTime.remove();
         }
     }
 
+    @WrapMethod(method = "parseError")
+    private static LuaError silly$parseUncatchables(Throwable e, Operation<LuaError> original) {
+        if (e instanceof LuaUncatchableError) return new LuaError(e.getMessage());
+        return original.call(e);
+    }
+
     @Inject(method="error", at = @At("HEAD"), cancellable = true)
     public void errorMixin(Throwable e, CallbackInfo ci) {
         if (owner.luaRuntime == null) return;
+        if (e instanceof LuaUncatchableError) return;
         LuaEvent ev = ((EventsAccessor)owner.luaRuntime.events).silly$getErrorEvent();
         if (ev == null) return;
         if (ev.__len() > 0) {

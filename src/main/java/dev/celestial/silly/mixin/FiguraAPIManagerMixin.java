@@ -2,6 +2,8 @@ package dev.celestial.silly.mixin;
 
 import dev.celestial.silly.SillySettings;
 import dev.celestial.silly.SillyUtil;
+import dev.celestial.silly.lua.data.SillySoundEventData;
+import dev.celestial.silly.lua.BackportWrapper.BackportedTexture;
 import dev.celestial.silly.lua.LuaGraphicsAPI;
 import dev.celestial.silly.lua.*;
 import dev.celestial.silly.not_a_mixin.AvatarExtensions;
@@ -35,6 +37,10 @@ public class FiguraAPIManagerMixin {
         WHITELISTED_CLASSES.add(SillyAPI.SillyVehicleAPI.class);
         WHITELISTED_CLASSES.add(CollectionAPI.class);
         WHITELISTED_CLASSES.add(SillyCompatsAPI.class);
+        WHITELISTED_CLASSES.add(SillySoundEventData.class);
+        WHITELISTED_CLASSES.add(SillyAudioEncoding.class);
+        WHITELISTED_CLASSES.add(SillyAudioEncoding.SillySoundDataContainer.class);
+        WHITELISTED_CLASSES.add(BackportedTexture.class);
         WHITELISTED_CLASSES.addAll(SillyCompatsAPI.getLoaded());
 
         if (SillyUtil.DEV_MODE) {

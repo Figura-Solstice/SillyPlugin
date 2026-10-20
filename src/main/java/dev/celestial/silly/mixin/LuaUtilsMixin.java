@@ -3,11 +3,17 @@ package dev.celestial.silly.mixin;
 import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import dev.celestial.silly.SillySettings;
+import net.minecraft.client.Minecraft;
+import net.minecraft.commands.arguments.item.ItemArgument;
+import net.minecraft.commands.arguments.item.ItemInput;
+import net.minecraft.commands.arguments.item.ItemParser;
 import net.minecraft.world.item.ItemStack;
 import org.figuramc.figura.lua.api.world.ItemStackAPI;
 import org.figuramc.figura.utils.LuaUtils;
 import org.luaj.vm2.LuaError;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Redirect;
 
 @Mixin(value = LuaUtils.class, remap = false)
 public class LuaUtilsMixin {

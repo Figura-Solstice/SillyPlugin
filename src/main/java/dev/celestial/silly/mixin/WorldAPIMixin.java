@@ -28,38 +28,9 @@ public class WorldAPIMixin {
         Pair<UUID, String> caller = BackportsAPI.callerStack.get().peek();
         if (caller == null) throw new IllegalStateException("Caller stack peek gave null (?!?!?!?)");
         for (Map.Entry<String, LuaTable> e : val.entrySet()) {
-            ret.put(e.getKey(), SillyUtil.createReadOnlyLuaTable(silly$transformTable(e.getValue(), caller.getLeft(), UUID.fromString(e.getKey()))));
+            ret.put(e.getKey(), SillyUtil.createReadOnlyLuaTable(
+                    SillyUtil.transformTableWithCaller(e.getValue(), caller.getLeft(), UUID.fromString(e.getKey()))));
         }
         cir.setReturnValue(ret);
-    }
-
-
-    @Unique
-    private static LuaTable silly$transformTable(LuaTable table, UUID caller, UUID owner) {
-        LuaTable ret = new LuaTable();
-
-        for (LuaValue key : table.keys()) {
-            LuaValue value = table.rawget(key);
-            if (value.isfunction()) {
-                ret.rawset(key, silly$transformFunction(value.checkfunction(), caller, owner));
-            } else if (value.istable()) {
-                ret.rawset(key, silly$transformTable(value.checktable(), caller, owner));
-            } else {
-                ret.rawset(key, value);
-            }
-        }
-        return ret;
-    }
-
-    @Unique
-    private static LuaValue silly$transformFunction(LuaFunction func, UUID caller, UUID owner) {
-        return new VarArgFunction() {
-            @Override
-            public Varargs invoke(Varargs args) {
-                try(CallerContext ctx = BackportsAPI.openCallerContext(caller, owner, "TransformedFunction/" + func.hashCode())) {
-                    return func.invoke(args);
-                }
-            }
-        };
     }
 }

@@ -1,3 +1,5 @@
+import dev.kikugie.stonecutter.SemanticVersion
+
 plugins {
     id("dev.isxander.modstitch.base") version "0.5.12"
 }
@@ -9,6 +11,10 @@ fun prop(name: String, consumer: (prop: String) -> Unit) {
 
 val minecraft = property("deps.minecraft") as String;
 
+val dev_mode = rootProject.hasProperty("silly_dev_mode") && rootProject.property("silly_dev_mode") == "true"
+
+val minecraft = property("deps.minecraft") as String;
+
 modstitch {
     minecraftVersion = minecraft
 
@@ -16,6 +22,7 @@ modstitch {
     // https://stonecutter.kikugie.dev/stonecutter/guide/setup#checking-versions
     javaTarget = when (minecraft) {
         "1.20.1" -> 17
+        "1.20.4" -> 17
         "1.21.1" -> 21
         "1.21.4" -> 21
         else -> throw IllegalArgumentException("Please store the java version for ${property("deps.minecraft")} in build.gradle.kts!")
@@ -37,10 +44,11 @@ modstitch {
         modAuthor = "Niko Solstice"
         modDescription = "Spiritual successor of GoofyPlugin."
         val creds = arrayOf(
-            "TheKillerBunny: for making GoofyPlugin",
+            "BeanGalSolina: for making GoofyPlugin",
             "Sam ★: Being so cool fr",
             "cosmic_the_cat: Creating the icon for the plugin",
-            "Somataru: French translations"
+            "Somataru: French translations",
+            "KingRoboLizard: getBlockEntity"
         )
         modCredits = creds.joinToString("\n");
         modLicense = "MIT"
@@ -55,6 +63,7 @@ modstitch {
             put("mod_issue_tracker", "https://github.com/figura-solstice/sillyplugin")
             put("pack_format", when (property("deps.minecraft")) {
                 "1.20.1" -> 15
+                "1.20.4" -> 26
                 "1.21.1" -> 34
                 "1.21.4" -> 46
                 else -> throw IllegalArgumentException("Please store the resource pack version for ${property("deps.minecraft")} in build.gradle.kts! https://minecraft.wiki/w/Pack_format")
@@ -128,7 +137,8 @@ stonecutter {
         "fabric" to constraint.equals("fabric"),
         "neoforge" to constraint.equals("neoforge"),
         "forge" to constraint.equals("forge"),
-        "vanilla" to constraint.equals("vanilla")
+        "vanilla" to constraint.equals("vanilla"),
+        "dev_mode" to dev_mode,
     )
 }
 
@@ -148,16 +158,19 @@ var loader = "fabric";
 if (modstitch.isModDevGradleRegular)
     loader = "neoforge"
 
+// TODO: migrate to using gradle.properties
 var svc_version = "";
 if (modstitch.isLoom) {
     svc_version = when (property("deps.minecraft")) {
         "1.20.1" -> "UiVFkKer"
+        "1.20.4" -> "VRNP2Gm6"
         "1.21.1" -> "IttovdN3"
         "1.21.4" -> "B0SmLrhu"
         else -> throw IllegalArgumentException("Please store the fabric svc version for ${property("deps.minecraft")} in build.gradle.kts!");
     }
 } else {
     svc_version = when (property("deps.minecraft")) {
+        "1.20.4" -> "jeXYEbLA"
         "1.21.1" -> "8xOu3Um5"
         "1.21.4" -> "5ERpmU4w"
         else -> throw IllegalArgumentException("Please store the neoforge svc version for ${property("deps.minecraft")} in build.gradle.kts!");
@@ -180,11 +193,9 @@ dependencies {
     var vivecraft_version = property("deps.vivecraft") as String
     modstitchModImplementation("maven.modrinth:vivecraft:${vivecraft_version}")
 
-
 //    modstitchCompileOnly(figura("common-mojmap"))
     modstitchModImplementation("com.github.FiguraMC.luaj:luaj-core:$luaj_version-figura")
     modstitchModImplementation("com.github.FiguraMC.luaj:luaj-jse:$luaj_version-figura")
     modstitchModImplementation("com.neovisionaries:nv-websocket-client:$nv_websocket_version")
     modstitchModImplementation("com.pngencoder:pngencoder:0.16.0")
-
 }

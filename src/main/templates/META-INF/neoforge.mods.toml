@@ -11,6 +11,7 @@ clientSideOnly = true
     description = '''${mod_description}'''
     authors = "${mod_author}"
     logoFile= "assets/sillyplugin/icon.png"
+    credits = """${mod_credits}"""
 
 [[dependencies.${mod_id}]]
     modId = "neoforge"
@@ -24,3 +25,5 @@ clientSideOnly = true
 
 [[mixins]]
 config = "sillyplugin.mixins.json"
+[[mixins]]
+config = "sillyplugin-backports.mixins.json"

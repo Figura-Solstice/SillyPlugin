@@ -1,5 +1,5 @@
 > [!Note]
-> Development has moved to [Codeberg](https://codeberg.org/Felines-of-Figura/SillyPlugin)
+> Development has moved to [Codeburger](https://codeberg.org/Felines-of-Figura/SillyPlugin)
 # SillyPlugin
 Plugin for [Figura](https://modrinth.com/mod/figura), adding in random-yet-somewhat-useful features.
 Successor to [Goofyplugin](https://modrinth.com/mod/figura-goofyplugin)

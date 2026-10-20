@@ -91,6 +91,4 @@
         "luaj_memory.LuaTableMixin",
         "ItemStackAPIMixin"
     ],
-    "mixins": [
-    ]
 }

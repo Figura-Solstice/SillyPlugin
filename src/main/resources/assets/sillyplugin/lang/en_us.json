@@ -66,8 +66,6 @@
     "figura.docs.silly.get_player_names": "Returns a table of uuid -> username.\nEffectively the inverse of getPlayerUUIDs()",
     "figura.docs.silly.get_latency": "Returns the server ping of the specified target (defaults to yourself)",
 
-    "figura.docs.silly.compats": "Compatibility APIs for other mods.\nAccess with `silly.compats`",
-    "figura.docs.silly.compats.svc": "Accesses the Simple Voice Chat compatibility API.\nAccess with `silly.compats.svc`",
     "figura.docs.silly.compats.vivecraft": "Accesses the Vivecraft compatibility API.\nMost methods accept an optional player UUID; if omitted, they return the avatar owner's VR data.\nAccess with `silly.compats.vivecraft`",
 
     "figura.docs.silly.compats.vivecraft.is_vr_initialized": "Returns true if Vivecraft's VR runtime has been initialized on this client.",

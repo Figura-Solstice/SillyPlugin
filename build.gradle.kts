@@ -72,6 +72,11 @@ modstitch {
             val aw = project.file("src/main/resources/sillyplugin.accesswidener")
             if (aw.exists())
                 accessWidenerPath = aw
+
+            mixin {
+                useLegacyMixinAp.set(true)
+                defaultRefmapName.set("sillyplugin-refmap.json")
+            }
         }
     }
 
@@ -103,7 +108,7 @@ modstitch {
     mixin { // re-enable if modstitch fixes mixins being added multiple times
         // You do not need to specify mixins in any mods.json/toml file if this is set to
         // true, it will automatically be generated.
-        addMixinsToModManifest = false
+        addMixinsToModManifest = true
 
 //        configs.register("sillyplugin")
 
@@ -171,12 +176,15 @@ dependencies {
     modstitchModImplementation("maven.modrinth:9eGKb6K1:${svc_version}")
     modstitchModImplementation("de.maxhenkel.voicechat:voicechat-api:${voicechat_api_version}")
 
+    // Vivecraft official Mod API (since Vivecraft 1.3.0)
+    var vivecraft_version = property("deps.vivecraft") as String
+    modstitchModImplementation("maven.modrinth:vivecraft:${vivecraft_version}")
+
 
 //    modstitchCompileOnly(figura("common-mojmap"))
     modstitchModImplementation("com.github.FiguraMC.luaj:luaj-core:$luaj_version-figura")
     modstitchModImplementation("com.github.FiguraMC.luaj:luaj-jse:$luaj_version-figura")
     modstitchModImplementation("com.neovisionaries:nv-websocket-client:$nv_websocket_version")
     modstitchModImplementation("com.pngencoder:pngencoder:0.16.0")
-    modstitchJiJ("com.pngencoder:pngencoder:0.16.0")
 
 }

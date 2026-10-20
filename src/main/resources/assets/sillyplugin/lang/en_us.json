@@ -39,6 +39,30 @@
     "figura.docs.silly.update_avatar_size": "Updates the size of the avatar figura shows you.\nOnly useful in NBT-transforming contexts (like using addScript)",
     "figura.docs.silly.get_skin": "Gets the resource location of another player's skin.\nA callback is only required if a name is passed instead of a PlayerAPI.\nThere are no guarantees as to whether or not the callback will be fired.",
 
+    "figura.docs.silly.compats": "Compatibility APIs for other mods.\nAccess with `silly.compats`",
+    "figura.docs.silly.compats.svc": "Accesses the Simple Voice Chat compatibility API.\nAccess with `silly.compats.svc`",
+    "figura.docs.silly.compats.vivecraft": "Accesses the Vivecraft compatibility API.\nMost methods accept an optional player UUID; if omitted, they return the avatar owner's VR data.\nAccess with `silly.compats.vivecraft`",
+
+    "figura.docs.silly.compats.vivecraft.is_vr_initialized": "Returns true if Vivecraft's VR runtime has been initialized on this client.",
+    "figura.docs.silly.compats.vivecraft.is_vr_active": "Returns true if the target player is currently in VR.\nDefaults to the avatar owner if no UUID is given.",
+    "figura.docs.silly.compats.vivecraft.is_seated": "Returns true if the target player is currently seated in VR.\nDefaults to the avatar owner if no UUID is given.",
+    "figura.docs.silly.compats.vivecraft.is_left_handed": "Returns true if the target player is using left-handed mode in VR.\nDefaults to the avatar owner if no UUID is given.",
+    "figura.docs.silly.compats.vivecraft.get_world_scale": "Returns the target player's current world scale multiplier in VR.\nDefaults to the avatar owner if no UUID is given.",
+    "figura.docs.silly.compats.vivecraft.get_fbt_mode": "Returns the target player's current full body tracking mode as a string.\nDefaults to the avatar owner if no UUID is given.",
+    "figura.docs.silly.compats.vivecraft.get_head_pos": "Returns the position of the target player's VR headset in world space.\nDefaults to the avatar owner if no UUID is given.",
+    "figura.docs.silly.compats.vivecraft.get_head_dir": "Returns the look direction of the target player's VR headset.\nDefaults to the avatar owner if no UUID is given.",
+    "figura.docs.silly.compats.vivecraft.get_head_rot": "Returns the rotation of the target player's VR headset as a Vector3 of pitch, yaw, and roll, extracted from the part's quaternion.\nDefaults to the avatar owner if no UUID is given.",
+    "figura.docs.silly.compats.vivecraft.get_hand_pos": "Returns the position of the given hand or body part on the target player in world space.\nDefaults to the avatar owner if no UUID is given.\nSee the SillyVRBodyPart enum for valid names.",
+    "figura.docs.silly.compats.vivecraft.get_hand_dir": "Returns the direction of the given hand or body part on the target player.\nDefaults to the avatar owner if no UUID is given.\nSee the SillyVRBodyPart enum for valid names.",
+    "figura.docs.silly.compats.vivecraft.get_hand_rot": "Returns the rotation of the given hand or body part on the target player as a Vector3 of pitch, yaw, and roll, extracted from the part's quaternion.\nDefaults to the avatar owner if no UUID is given.\nSee the SillyVRBodyPart enum for valid names.",
+    "figura.docs.silly.compats.vivecraft.get_body_part_pos": "Returns the position of the given body part on the target player in world space.\nDefaults to the avatar owner if no UUID is given.\nSee the SillyVRBodyPart enum for valid names.",
+    "figura.docs.silly.compats.vivecraft.get_body_part_dir": "Returns the direction of the given body part on the target player.\nDefaults to the avatar owner if no UUID is given.\nSee the SillyVRBodyPart enum for valid names.",
+    "figura.docs.silly.compats.vivecraft.get_body_part_rot": "Returns the rotation of the given body part on the target player as a Vector3 of pitch, yaw, and roll, extracted from the part's quaternion.\nDefaults to the avatar owner if no UUID is given.\nSee the SillyVRBodyPart enum for valid names.",
+    "figura.docs.silly.compats.vivecraft.get_pose_data": "Returns a table containing all available VR body part data for the target player.\nDefaults to the avatar owner if no UUID is given.\nThe table includes `fbtMode`, `leftHanded`, `seated`, and a subtable for each body part with `pos`, `rot`, `dir`, and `rot4`.",
+    "figura.docs.silly.compats.vivecraft.trigger_haptic": "Triggers a haptic pulse on the local client's body part.\nOnly the avatar owner/host can trigger haptics.\nSee the SillyVRBodyPart enum for valid names.\nDuration, frequency, amplitude, and delay are optional and default to 0.1, 160, 1.0, and 0 respectively.",
+    "figura.docs.silly.compats.vivecraft.set_vivecraft_anim": "Sets whether Vivecraft should animate the vanilla player model parts for this avatar.\nWhen set to false, the avatar will use vanilla animations for arms/legs instead of VR tracking data, visible to anyone rendering the wearer.\nDefaults to true.",
+    "figura.docs.silly.compats.vivecraft.get_vivecraft_anim": "Returns whether Vivecraft is currently allowed to animate the vanilla player model parts for this avatar.",
+
     "figura.docs.silly.vehicle_field": "Accesses the current SillyVehicleAPI instance.",
     "figura.docs.silly.vehicle": "Silly's Vehicle API\nAccess with `silly.vehicle`",
     "figura.docs.silly.vehicle.set_pos": "Sets your vehicle's position.\nRequires cheats.",
@@ -95,6 +119,7 @@
     "figura.docs.events.move": "Event that's called when your velocity has been calculated.\nReturn a Vector3 to overwrite the velocity.\nRequires cheats to overwrite.",
 
     "figura.docs.enum.silly_gui_element": "List of valid GUI elements that can be disabled in Sillyplugin.",
+    "figura.docs.enum.silly_vr_body_part": "List of valid VR body part names for Vivecraft compatibility methods.",
 
     "figura.docs.collection": "Various useful functions for tables",
     "figura.docs.silly.collection": "The local instance of CollectionAPI",

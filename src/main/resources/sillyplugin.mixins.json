@@ -6,6 +6,7 @@
         "defaultRequire": 1
     },
     "compatibilityLevel": "JAVA_17",
+    "refmap": "sillyplugin-refmap.json",
     "client": [
         "ChannelAccessor",
         "ClientLevelMixin",
@@ -16,6 +17,7 @@
         "MinecraftAccessor",
         "MinecraftClientMixin",
         "PlayerRendererMixin",
+        "compat.VivecraftVRPlayerModelMixin",
         "SoundBufferAccessor",
         "hud.BossHealthOverlayMixin",
         "hud.ChatComponentMixin",
